@@ -18,7 +18,7 @@ import { AlertCircle, Lock, Loader2, Sparkles } from 'lucide-react';
 export const WatchPartyRoom = () => {
   const { code } = useParams();
   const navigate = useNavigate();
-  const upperCode = (code || '').toUpperCase();
+  const upperCode = (code || '').toUpperCase().trim();
 
   const { user, loginGuest, isAuthenticated } = useAuth();
   const {
@@ -132,7 +132,7 @@ export const WatchPartyRoom = () => {
 
         // Join socket room
         joinRoom(upperCode);
-        setJoining(false);
+        // Note: joining state stays true until socket roomData arrives or an error is thrown
       } catch (err) {
         if (isCancelled) return;
         setJoinError(err.message || 'Could not connect to room');
@@ -156,13 +156,10 @@ export const WatchPartyRoom = () => {
     try {
       const name = guestDisplayName.trim() || `Viewer_${Math.floor(1000 + Math.random() * 9000)}`;
       await loginGuest(name);
-
-      await api.joinRoom(upperCode, roomPassword || undefined);
-      joinRoom(upperCode);
       setPasswordRequired(false);
+      // loginGuest updates isAuthenticated=true which triggers verifyAndJoin() cleanly
     } catch (err) {
       setJoinError(err.message || 'Failed to join watch party');
-    } finally {
       setJoining(false);
     }
   };
@@ -203,6 +200,13 @@ export const WatchPartyRoom = () => {
     }
   };
 
+  // Track when roomData arrives to finish joining state
+  useEffect(() => {
+    if (roomData) {
+      setJoining(false);
+    }
+  }, [roomData]);
+
   // Password / Guest Join Prompt Modal
   if (!isAuthenticated || (passwordRequired && !roomData)) {
     return (
@@ -216,9 +220,9 @@ export const WatchPartyRoom = () => {
           </h2>
           <p className="text-xs text-slate-400 mb-6 font-mono">Room Code: {upperCode}</p>
 
-          {joinError && (
+          {(joinError || roomError) && (
             <div className="p-3 mb-4 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-300">
-              {joinError}
+              {joinError || roomError}
             </div>
           )}
 
@@ -268,12 +272,60 @@ export const WatchPartyRoom = () => {
     );
   }
 
-  // Loading Room State
-  if (joining && !roomData) {
+  // Room Join Error State
+  if (!roomData && (joinError || roomError)) {
     return (
-      <div className="min-h-screen bg-charcoal-950 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-charcoal-950 flex flex-col items-center justify-center p-4 text-center select-none">
+        <div className="w-full max-w-md cinematic-glass-dark p-6 rounded-2xl border border-red-500/40 shadow-cinematic">
+          <div className="w-12 h-12 rounded-full bg-red-500/20 text-red-300 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-6 h-6 text-red-400" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-100 mb-1">
+            Could Not Connect to Watch Party
+          </h2>
+          <p className="text-xs text-slate-400 font-mono mb-3">Room: {upperCode}</p>
+          <div className="p-3 mb-5 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-300 leading-relaxed">
+            {joinError || roomError}
+          </div>
+          <div className="flex gap-2.5 justify-center">
+            <button
+              onClick={() => {
+                setJoinError(null);
+                setJoining(true);
+                api.joinRoom(upperCode, roomPassword || undefined)
+                  .then(() => joinRoom(upperCode))
+                  .catch((err) => {
+                    setJoinError(err.message || 'Retry failed');
+                    setJoining(false);
+                  });
+              }}
+              className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-glow transition-all"
+            >
+              Retry Connection
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2.5 bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-all"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading Room State while connecting to socket and receiving authoritative room metadata
+  if (!roomData) {
+    return (
+      <div className="min-h-screen bg-charcoal-950 flex flex-col items-center justify-center p-4 text-center select-none">
         <Loader2 className="w-10 h-10 text-brand-400 animate-spin mb-4" />
-        <p className="text-sm font-medium text-slate-300">Entering Watch Party {upperCode}...</p>
+        <p className="text-sm font-semibold text-slate-200 mb-1">
+          Entering Watch Party {upperCode}...
+        </p>
+        <p className="text-xs text-slate-400">
+          Connecting to real-time sync server & participants...
+        </p>
       </div>
     );
   }

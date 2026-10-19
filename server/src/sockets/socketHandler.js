@@ -42,6 +42,41 @@ const setupSocketHandler = (io) => {
           runtime.emptyRoomTimer = null;
         }
 
+        // Calculate dynamic playback time if video was playing
+        let currentPlaybackTime = runtime.playback.currentTime;
+        if (runtime.playback.isPlaying) {
+          const elapsed = (Date.now() - runtime.playback.lastUpdated) / 1000;
+          currentPlaybackTime += elapsed * (runtime.playback.playbackRate || 1);
+        }
+
+        // Clean up any stale participant sessions with the same userId (e.g. from page refresh or re-join)
+        for (const [existingSocketId, p] of runtime.participants.entries()) {
+          if (p.userId === user.userId && existingSocketId !== socket.id) {
+            runtime.participants.delete(existingSocketId);
+            socket.to(upperCode).emit('room:user-left', {
+              socketId: existingSocketId,
+              username: p.username,
+              newHost: null
+            });
+          }
+        }
+
+        // If this exact socket has already joined, re-emit room:joined without duplicate broadcasts
+        if (runtime.participants.has(socket.id)) {
+          const currentParticipant = runtime.participants.get(socket.id);
+          return socket.emit('room:joined', {
+            roomCode: upperCode,
+            roomName: room.name,
+            self: currentParticipant,
+            participants: Array.from(runtime.participants.values()),
+            playback: {
+              ...runtime.playback,
+              currentTime: currentPlaybackTime
+            },
+            activeScreenSharer: runtime.activeScreenSharer
+          });
+        }
+
         // Capacity check
         if (runtime.participants.size >= (room.maxParticipants || 4)) {
           return socket.emit('room:error', { message: 'Room is full (max 4 participants)' });
@@ -66,13 +101,6 @@ const setupSocketHandler = (io) => {
         runtime.participants.set(socket.id, participant);
         currentRoomCode = upperCode;
         socket.join(upperCode);
-
-        // Calculate dynamic playback time if video was playing
-        let currentPlaybackTime = runtime.playback.currentTime;
-        if (runtime.playback.isPlaying) {
-          const elapsed = (Date.now() - runtime.playback.lastUpdated) / 1000;
-          currentPlaybackTime += elapsed * (runtime.playback.playbackRate || 1);
-        }
 
         const participantsList = Array.from(runtime.participants.values());
 

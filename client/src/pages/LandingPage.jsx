@@ -77,7 +77,21 @@ export const LandingPage = () => {
     try {
       await ensureAuth();
 
-      const cleanCode = joinCode.trim().toUpperCase();
+      // Normalize room code (extract code if user pasted a full URL)
+      let cleanCode = joinCode.trim();
+      if (cleanCode.includes('/room/')) {
+        cleanCode = cleanCode.split('/room/').pop();
+      } else if (cleanCode.includes('/')) {
+        cleanCode = cleanCode.split('/').pop();
+      }
+      cleanCode = cleanCode.split('?')[0].split('#')[0].toUpperCase().trim();
+
+      if (!cleanCode) {
+        setError('Please enter a valid room code or link');
+        setLoading(false);
+        return;
+      }
+
       // Verify room access
       await api.joinRoom(cleanCode, joinPassword.trim() || undefined);
 

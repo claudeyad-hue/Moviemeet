@@ -398,8 +398,10 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
       if (peer.socketId === selfParticipant.socketId) return;
 
       if (!peerConnections.current[peer.socketId]) {
-        // The newly joined user initiates the offer to existing peers
-        const shouldInitiate = selfParticipant.joinedAt > peer.joinedAt;
+        // The newly joined user initiates the offer to existing peers (with deterministic socketId tiebreaker)
+        const shouldInitiate =
+          selfParticipant.joinedAt > peer.joinedAt ||
+          (selfParticipant.joinedAt === peer.joinedAt && selfParticipant.socketId > peer.socketId);
         createPeerConnection(peer.socketId, shouldInitiate);
       }
     });
@@ -446,7 +448,10 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
 
           // Polite peer pattern: resolve offer glare / collision cleanly
           const peer = participants.find((p) => p.socketId === fromSocketId);
-          const isPolite = selfParticipant && peer ? selfParticipant.joinedAt > peer.joinedAt : true;
+          const isPolite = selfParticipant && peer
+            ? (selfParticipant.joinedAt > peer.joinedAt ||
+               (selfParticipant.joinedAt === peer.joinedAt && selfParticipant.socketId > peer.socketId))
+            : true;
           const offerCollision =
             makingOfferRef.current[fromSocketId] || pc.signalingState !== 'stable';
 

@@ -188,9 +188,10 @@ export const SocketProvider = ({ children }) => {
 
   const joinRoom = useCallback(
     (roomCode) => {
-      currentRoomCodeRef.current = roomCode;
-      if (socketRef.current) {
-        socketRef.current.emit('room:join', { roomCode });
+      const cleanCode = (roomCode || '').toUpperCase().trim();
+      currentRoomCodeRef.current = cleanCode;
+      if (socketRef.current && socketRef.current.connected) {
+        socketRef.current.emit('room:join', { roomCode: cleanCode });
       }
     },
     []
