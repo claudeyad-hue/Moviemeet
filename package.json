@@ -1,0 +1,22 @@
+{
+  "name": "moviemeet",
+  "version": "1.0.0",
+  "description": "MovieMeet: A Synchronized Movie-Watching Web App with Video, Voice, Chat, and Screen Sharing",
+  "private": true,
+  "scripts": {
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "build:client": "npm run build --prefix client",
+    "test:server": "npm run test --prefix server"
+  },
+  "keywords": [
+    "moviemeet",
+    "webrtc",
+    "socketio",
+    "react",
+    "screenshare",
+    "watchparty"
+  ],
+  "author": "",
+  "license": "MIT"
+}
