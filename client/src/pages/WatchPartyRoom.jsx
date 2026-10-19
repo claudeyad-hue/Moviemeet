@@ -85,7 +85,8 @@ export const WatchPartyRoom = () => {
     toggleVideo,
     startScreenShare,
     stopScreenShare,
-    toggleHideParticipantVideo
+    toggleHideParticipantVideo,
+    retryMedia
   } = useWebRTC({
     socket,
     roomCode: upperCode,
@@ -165,13 +166,13 @@ export const WatchPartyRoom = () => {
   };
 
   // Broadcast mic/camera state to socket peers
-  const handleToggleAudio = () => {
-    const nextState = toggleAudio();
+  const handleToggleAudio = async () => {
+    const nextState = await toggleAudio();
     updateMediaStatus(nextState, videoEnabled);
   };
 
-  const handleToggleVideo = () => {
-    const nextState = toggleVideo();
+  const handleToggleVideo = async () => {
+    const nextState = await toggleVideo();
     updateMediaStatus(audioEnabled, nextState);
   };
 
@@ -287,11 +288,17 @@ export const WatchPartyRoom = () => {
 
       {/* Media Warning Banner if permission denied */}
       {mediaError && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between text-xs text-amber-300">
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 flex items-center justify-between text-xs text-amber-300">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
             <span>{mediaError}</span>
           </div>
+          <button
+            onClick={retryMedia}
+            className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 rounded-lg text-xs font-semibold flex-shrink-0 transition-colors ml-3 cursor-pointer"
+          >
+            Retry Permissions
+          </button>
         </div>
       )}
 

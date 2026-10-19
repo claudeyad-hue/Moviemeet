@@ -37,38 +37,84 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
       .catch((err) => console.warn('Using default STUN server:', err.message));
   }, [roomCode]);
 
-  // Initialize local user camera & microphone
-  useEffect(() => {
-    let isMounted = true;
+  // Initialize local user camera & microphone with graceful fallback
+  const startLocalMedia = useCallback(async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Media devices not supported. Please use HTTPS or localhost.');
+      }
 
-    const startLocalMedia = async () => {
+      let stream = null;
+      let hasAudio = false;
+      let hasVideo = false;
+
+      // 1. First attempt: both video and audio
       try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error('Media devices not supported. Please use HTTPS or localhost.');
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
+        stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } },
           audio: { echoCancellation: true, noiseSuppression: true }
         });
-
-        if (!isMounted) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
+        hasAudio = true;
+        hasVideo = true;
+      } catch (bothErr) {
+        console.warn('Initial both media failed, trying audio only fallback:', bothErr.name, bothErr.message);
+        // 2. Second attempt: audio only (common if no webcam or webcam is busy)
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true },
+            video: false
+          });
+          hasAudio = true;
+          hasVideo = false;
+        } catch (audioErr) {
+          console.warn('Audio only fallback failed, trying video only:', audioErr.name, audioErr.message);
+          // 3. Third attempt: video only (if no microphone plugged in)
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } },
+              audio: false
+            });
+            hasAudio = false;
+            hasVideo = true;
+          } catch (allErr) {
+            console.warn('All media devices failed:', allErr);
+            throw allErr;
+          }
         }
-
-        localStreamRef.current = stream;
-        setLocalStream(stream);
-        setMediaError(null);
-      } catch (err) {
-        console.warn('Microphone/Camera access error:', err.name, err.message);
-        setMediaError(
-          err.name === 'NotAllowedError'
-            ? 'Camera/microphone permission was denied. You can still watch the movie, view screen shares, and use chat.'
-            : 'Could not access camera or microphone: ' + err.message
-        );
       }
-    };
+
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+      setAudioEnabled(hasAudio);
+      setVideoEnabled(hasVideo);
+      setMediaError(null);
+    } catch (err) {
+      console.warn('Microphone/Camera access error:', err.name, err.message);
+      setAudioEnabled(false);
+      setVideoEnabled(false);
+      setLocalStream(null);
+      localStreamRef.current = null;
+
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setMediaError(
+          'Camera / microphone access is blocked. Click the padlock 🔒 or tune icon in your browser address bar to allow permissions, then click Retry.'
+        );
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setMediaError(
+          'No camera or microphone hardware found on your computer. You can still watch movies, view screen shares, and chat.'
+        );
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        setMediaError(
+          'Camera or microphone is currently in use by another app (Zoom, Teams, or another tab). Close the other app and click Retry.'
+        );
+      } else {
+        setMediaError('Could not access camera or microphone: ' + err.message);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
 
     startLocalMedia();
 
@@ -83,7 +129,7 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
         screenStreamRef.current = null;
       }
     };
-  }, []);
+  }, [startLocalMedia]);
 
   // Helper to create RTCPeerConnection
   const createPeerConnection = useCallback((peerSocketId, isInitiator) => {
@@ -294,33 +340,113 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
     };
   }, [socket, createPeerConnection]);
 
-  // Audio mute/unmute
-  const toggleAudio = useCallback(() => {
-    if (localStreamRef.current) {
-      const audioTracks = localStreamRef.current.getAudioTracks();
-      if (audioTracks.length > 0) {
-        const nextState = !audioEnabled;
-        audioTracks.forEach((t) => (t.enabled = nextState));
-        setAudioEnabled(nextState);
-        return nextState;
+  // Audio mute/unmute with dynamic track acquisition
+  const toggleAudio = useCallback(async () => {
+    try {
+      if (localStreamRef.current) {
+        const audioTracks = localStreamRef.current.getAudioTracks();
+        if (audioTracks.length > 0) {
+          const nextState = !audioEnabled;
+          audioTracks.forEach((t) => (t.enabled = nextState));
+          setAudioEnabled(nextState);
+          return nextState;
+        }
       }
-    }
-    return audioEnabled;
-  }, [audioEnabled]);
 
-  // Video on/off
-  const toggleVideo = useCallback(() => {
-    if (localStreamRef.current) {
-      const videoTracks = localStreamRef.current.getVideoTracks();
-      if (videoTracks.length > 0) {
-        const nextState = !videoEnabled;
-        videoTracks.forEach((t) => (t.enabled = nextState));
-        setVideoEnabled(nextState);
-        return nextState;
+      // If we don't have an audio track yet, request microphone on-demand!
+      const newAudioStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true }
+      });
+      const newAudioTrack = newAudioStream.getAudioTracks()[0];
+      if (!newAudioTrack) return false;
+
+      let combined = localStreamRef.current;
+      if (!combined) {
+        combined = new MediaStream();
+        localStreamRef.current = combined;
       }
+      combined.addTrack(newAudioTrack);
+      setLocalStream(new MediaStream(combined.getTracks()));
+      setAudioEnabled(true);
+      setMediaError(null);
+
+      // Add track to all active peer connections and renegotiate
+      Object.entries(peerConnections.current).forEach(async ([peerId, pc]) => {
+        try {
+          pc.addTrack(newAudioTrack, combined);
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          if (socket) {
+            socket.emit('webrtc:signal', {
+              toSocketId: peerId,
+              signal: { type: 'offer', sdp: pc.localDescription }
+            });
+          }
+        } catch (e) {
+          console.warn('Renegotiation after audio add error:', e);
+        }
+      });
+      return true;
+    } catch (err) {
+      console.warn('Microphone toggle request error:', err);
+      setMediaError('Could not activate microphone. Check browser permissions in your address bar.');
+      return false;
     }
-    return videoEnabled;
-  }, [videoEnabled]);
+  }, [audioEnabled, socket]);
+
+  // Video on/off with dynamic track acquisition
+  const toggleVideo = useCallback(async () => {
+    try {
+      if (localStreamRef.current) {
+        const videoTracks = localStreamRef.current.getVideoTracks();
+        if (videoTracks.length > 0) {
+          const nextState = !videoEnabled;
+          videoTracks.forEach((t) => (t.enabled = nextState));
+          setVideoEnabled(nextState);
+          return nextState;
+        }
+      }
+
+      // If we don't have a video track yet, request camera on-demand!
+      const newVideoStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } }
+      });
+      const newVideoTrack = newVideoStream.getVideoTracks()[0];
+      if (!newVideoTrack) return false;
+
+      let combined = localStreamRef.current;
+      if (!combined) {
+        combined = new MediaStream();
+        localStreamRef.current = combined;
+      }
+      combined.addTrack(newVideoTrack);
+      setLocalStream(new MediaStream(combined.getTracks()));
+      setVideoEnabled(true);
+      setMediaError(null);
+
+      // Add track to all active peer connections and renegotiate
+      Object.entries(peerConnections.current).forEach(async ([peerId, pc]) => {
+        try {
+          pc.addTrack(newVideoTrack, combined);
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          if (socket) {
+            socket.emit('webrtc:signal', {
+              toSocketId: peerId,
+              signal: { type: 'offer', sdp: pc.localDescription }
+            });
+          }
+        } catch (e) {
+          console.warn('Renegotiation after video add error:', e);
+        }
+      });
+      return true;
+    } catch (err) {
+      console.warn('Camera toggle request error:', err);
+      setMediaError('Could not activate camera. Check browser permissions or verify no other app is using the webcam.');
+      return false;
+    }
+  }, [videoEnabled, socket]);
 
   // Stop Screen Share implementation
   const stopScreenShare = useCallback(() => {
@@ -453,6 +579,7 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
     toggleVideo,
     startScreenShare,
     stopScreenShare,
-    toggleHideParticipantVideo
+    toggleHideParticipantVideo,
+    retryMedia: startLocalMedia
   };
 };
