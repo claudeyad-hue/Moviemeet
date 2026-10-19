@@ -38,7 +38,9 @@ const RemoteParticipantTile = ({
   return (
     <div
       className={`relative rounded-xl overflow-hidden cinematic-glass border border-slate-700/50 transition-all duration-300 flex-shrink-0 ${
-        isHidden ? 'h-14 w-full flex items-center p-2.5 bg-charcoal-900/90' : 'aspect-video w-full bg-charcoal-900'
+        isHidden
+          ? 'h-14 w-36 sm:w-44 md:w-full flex items-center p-2.5 bg-charcoal-900/90'
+          : 'aspect-video w-36 sm:w-44 md:w-full bg-charcoal-900'
       }`}
     >
       {/* Hidden audio element: ALWAYS plays remote audio regardless of video visibility */}
@@ -158,7 +160,7 @@ const LocalParticipantTile = ({
   }, [localStream]);
 
   return (
-    <div className="relative aspect-video w-full rounded-xl overflow-hidden cinematic-glass border border-brand-500/30 bg-charcoal-900 flex-shrink-0">
+    <div className="relative aspect-video w-36 sm:w-44 md:w-full rounded-xl overflow-hidden cinematic-glass border border-brand-500/30 bg-charcoal-900 flex-shrink-0">
       {localStream && videoEnabled ? (
         <video
           ref={localVideoRef}
@@ -228,7 +230,7 @@ export const ParticipantTiles = ({
   );
 
   return (
-    <div className="w-40 sm:w-48 md:w-56 lg:w-60 h-full flex flex-col gap-2.5 overflow-y-auto flex-shrink-0 custom-scrollbar pr-0.5 select-none">
+    <div className="w-full md:w-48 lg:w-60 h-auto md:h-full flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-y-auto flex-shrink-0 select-none py-1 md:py-0">
       {/* Self Tile */}
       <LocalParticipantTile
         selfParticipant={selfParticipant}

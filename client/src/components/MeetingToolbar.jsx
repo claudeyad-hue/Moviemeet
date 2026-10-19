@@ -30,7 +30,6 @@ export const MeetingToolbar = ({
   onStopScreenShare,
   onToggleFocusMode,
   onToggleChat,
-  onOpenSourceModal,
   onOpenShareModal,
   onSendReaction,
   onLeaveRoom,
@@ -180,15 +179,6 @@ export const MeetingToolbar = ({
         >
           <Sparkles className="w-4 h-4 text-amber-300" />
           <span className="hidden md:inline">Focus</span>
-        </button>
-
-        {/* Video Source Picker */}
-        <button
-          onClick={onOpenSourceModal}
-          className="hidden sm:flex p-2.5 sm:p-3 rounded-xl bg-charcoal-750 hover:bg-charcoal-700 text-slate-200 hover:text-white transition-all"
-          title="Change Movie / Video Source"
-        >
-          <Film className="w-4 h-4 sm:w-5 sm:h-5 text-brand-400" />
         </button>
 
         {/* Share Room Link / QR Modal Button */}

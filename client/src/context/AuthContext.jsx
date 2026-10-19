@@ -17,10 +17,35 @@ export const AuthProvider = ({ children }) => {
           setUser(data.user);
           setToken(storedToken);
         } catch (err) {
-          console.warn('Stored token expired or invalid:', err.message);
-          localStorage.removeItem('moviemeet_token');
-          setToken(null);
-          setUser(null);
+          if (err.message === 'Not authenticated') {
+            console.warn('Stored token expired or invalid:', err.message);
+            localStorage.removeItem('moviemeet_token');
+            setToken(null);
+            setUser(null);
+          } else {
+            // Cold start or temporary network failure: decode valid token payload so session survives
+            try {
+              const base64Url = storedToken.split('.')[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const payload = JSON.parse(window.atob(base64));
+              if (payload && payload.exp && payload.exp * 1000 > Date.now()) {
+                setUser({
+                  userId: payload.userId,
+                  username: payload.username,
+                  isGuest: payload.isGuest
+                });
+                setToken(storedToken);
+              } else {
+                localStorage.removeItem('moviemeet_token');
+                setToken(null);
+                setUser(null);
+              }
+            } catch (e) {
+              localStorage.removeItem('moviemeet_token');
+              setToken(null);
+              setUser(null);
+            }
+          }
         }
       }
       setLoading(false);

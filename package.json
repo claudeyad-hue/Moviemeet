@@ -4,6 +4,9 @@
   "description": "MovieMeet: A Synchronized Movie-Watching Web App with Video, Voice, Chat, and Screen Sharing",
   "private": true,
   "scripts": {
+    "start": "node server/src/server.js",
+    "build": "npm run build --prefix client",
+    "test": "npm test --prefix server",
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
     "build:client": "npm run build --prefix client",

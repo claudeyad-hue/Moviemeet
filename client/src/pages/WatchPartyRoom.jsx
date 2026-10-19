@@ -399,21 +399,19 @@ export const WatchPartyRoom = () => {
           )}
         </div>
 
-        {/* Vertical Side Participant Video Strip (Only shown in Cinema Mode) */}
+        {/* Side/Bottom Participant Video Strip (Shown in Cinema Mode) */}
         {viewMode === 'cinema' && !activeScreenSharer && (
-          <div className="hidden md:block">
-            <ParticipantTiles
-              selfParticipant={selfParticipant}
-              participants={participants}
-              localStream={localStream}
-              remoteStreams={remoteStreams}
-              audioEnabled={audioEnabled}
-              videoEnabled={videoEnabled}
-              hiddenVideoTiles={hiddenVideoTiles}
-              onToggleHideParticipantVideo={toggleHideParticipantVideo}
-              isFocusMode={isFocusMode}
-            />
-          </div>
+          <ParticipantTiles
+            selfParticipant={selfParticipant}
+            participants={participants}
+            localStream={localStream}
+            remoteStreams={remoteStreams}
+            audioEnabled={audioEnabled}
+            videoEnabled={videoEnabled}
+            hiddenVideoTiles={hiddenVideoTiles}
+            onToggleHideParticipantVideo={toggleHideParticipantVideo}
+            isFocusMode={isFocusMode}
+          />
         )}
 
         {/* Collapsible Chat Sidebar */}
@@ -441,7 +439,6 @@ export const WatchPartyRoom = () => {
         onStopScreenShare={stopScreenShare}
         onToggleFocusMode={() => setIsFocusMode(!isFocusMode)}
         onToggleChat={handleToggleChat}
-        onOpenSourceModal={() => setIsSourceModalOpen(true)}
         onOpenShareModal={() => setIsShareModalOpen(true)}
         onSendReaction={sendReaction}
         onLeaveRoom={handleLeaveRoom}
