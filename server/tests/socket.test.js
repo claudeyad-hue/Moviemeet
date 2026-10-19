@@ -184,4 +184,30 @@ describe('MovieMeet Socket.IO Real-time Synchronization Tests', () => {
       videoEnabled: true
     });
   });
+
+  test('Synchronized playback rate (speed) change broadcasts to room peers', (done) => {
+    clientSocket2.once('playback:sync', (syncData) => {
+      expect(syncData.action).toBe('playback-rate');
+      expect(syncData.state.playbackRate).toBe(1.5);
+      done();
+    });
+
+    clientSocket1.emit('playback:action', {
+      type: 'playback-rate',
+      playbackRate: 1.5
+    });
+  });
+
+  test('Interactive floating emoji reaction broadcasts with sender and position', (done) => {
+    clientSocket2.once('room:reaction', (reaction) => {
+      expect(reaction.emoji).toBe('🍿');
+      expect(reaction.senderName).toBe('HostAlice');
+      expect(reaction.x).toBeGreaterThanOrEqual(15);
+      done();
+    });
+
+    clientSocket1.emit('room:reaction', {
+      emoji: '🍿'
+    });
+  });
 });

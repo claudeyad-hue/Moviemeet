@@ -180,7 +180,7 @@ const setupSocketHandler = (io) => {
     });
 
     // Video Playback Synchronization
-    socket.on('playback:action', ({ type, currentTime, videoUrl, hostControlsOnly }) => {
+    socket.on('playback:action', ({ type, currentTime, videoUrl, hostControlsOnly, playbackRate }) => {
       if (!currentRoomCode) return;
       const runtime = Store.getRuntimeRoom(currentRoomCode);
       if (!runtime) return;
@@ -226,6 +226,13 @@ const setupSocketHandler = (io) => {
             runtime.playback.videoUrl = videoUrl.trim();
             runtime.playback.currentTime = 0;
             runtime.playback.isPlaying = false;
+            runtime.playback.lastUpdated = now;
+          }
+          break;
+
+        case 'playback-rate':
+          if (typeof playbackRate === 'number' && playbackRate >= 0.25 && playbackRate <= 3) {
+            runtime.playback.playbackRate = playbackRate;
             runtime.playback.lastUpdated = now;
           }
           break;
@@ -287,6 +294,23 @@ const setupSocketHandler = (io) => {
       };
 
       io.to(currentRoomCode).emit('chat:message', messagePayload);
+    });
+
+    // Floating Real-Time Reaction Emoji
+    socket.on('room:reaction', ({ emoji }) => {
+      if (!currentRoomCode || !emoji) return;
+      const allowedEmojis = ['❤️', '😂', '🍿', '😱', '🔥', '👏', '🎬', '😍', '🎉'];
+      const safeEmoji = allowedEmojis.includes(emoji) ? emoji : '🍿';
+
+      const reactionPayload = {
+        id: `react_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        emoji: safeEmoji,
+        senderName: user.username,
+        x: Math.floor(Math.random() * 70) + 15, // 15% to 85% horizontal position
+        timestamp: Date.now()
+      };
+
+      io.to(currentRoomCode).emit('room:reaction', reactionPayload);
     });
 
     // Leave room manually

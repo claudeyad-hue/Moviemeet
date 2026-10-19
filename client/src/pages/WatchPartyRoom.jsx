@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -10,6 +10,7 @@ import { ParticipantTiles } from '../components/ParticipantTiles';
 import { MeetingToolbar } from '../components/MeetingToolbar';
 import { ChatPanel } from '../components/ChatPanel';
 import { VideoSourceModal } from '../components/VideoSourceModal';
+import { ShareRoomModal } from '../components/ShareRoomModal';
 import { api } from '../utils/api';
 import { AlertCircle, Lock, Loader2, Sparkles } from 'lucide-react';
 
@@ -28,19 +29,23 @@ export const WatchPartyRoom = () => {
     playbackState,
     activeScreenSharer,
     messages,
+    reactions,
     roomError,
     joinRoom,
     leaveRoom,
     sendPlaybackAction,
     requestPlaybackSync,
     sendChatMessage,
+    sendReaction,
     updateMediaStatus
   } = useSocket();
 
   // Local state
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [subtitlesUrl, setSubtitlesUrl] = useState('');
   const [roomInfo, setRoomInfo] = useState(null);
   const [passwordRequired, setPasswordRequired] = useState(false);
@@ -48,6 +53,22 @@ export const WatchPartyRoom = () => {
   const [guestDisplayName, setGuestDisplayName] = useState('');
   const [joining, setJoining] = useState(true);
   const [joinError, setJoinError] = useState(null);
+  const lastMsgCountRef = useRef(0);
+
+  useEffect(() => {
+    if (!isChatOpen && messages.length > lastMsgCountRef.current) {
+      setUnreadCount((prev) => prev + (messages.length - lastMsgCountRef.current));
+    }
+    lastMsgCountRef.current = messages.length;
+  }, [messages, isChatOpen]);
+
+  const handleToggleChat = () => {
+    const nextState = !isChatOpen;
+    setIsChatOpen(nextState);
+    if (nextState) {
+      setUnreadCount(0);
+    }
+  };
 
   // WebRTC hook integration
   const {
@@ -261,7 +282,7 @@ export const WatchPartyRoom = () => {
         roomName={roomData?.roomName || roomInfo?.name}
         participantCount={participants.length}
         isConnected={isConnected}
-        onCopyInvite={handleCopyInvite}
+        onCopyInvite={() => setIsShareModalOpen(true)}
       />
 
       {/* Media Warning Banner if permission denied */}
@@ -297,6 +318,7 @@ export const WatchPartyRoom = () => {
                 onOpenSourceModal={() => setIsSourceModalOpen(true)}
                 isFocusMode={isFocusMode}
                 subtitlesUrl={subtitlesUrl}
+                reactions={reactions}
               />
             )}
           </div>
@@ -333,13 +355,16 @@ export const WatchPartyRoom = () => {
         activeScreenSharer={activeScreenSharer}
         isFocusMode={isFocusMode}
         isChatOpen={isChatOpen}
+        unreadCount={unreadCount}
         onToggleAudio={handleToggleAudio}
         onToggleVideo={handleToggleVideo}
         onStartScreenShare={startScreenShare}
         onStopScreenShare={stopScreenShare}
         onToggleFocusMode={() => setIsFocusMode(!isFocusMode)}
-        onToggleChat={() => setIsChatOpen(!isChatOpen)}
+        onToggleChat={handleToggleChat}
         onOpenSourceModal={() => setIsSourceModalOpen(true)}
+        onOpenShareModal={() => setIsShareModalOpen(true)}
+        onSendReaction={sendReaction}
         onLeaveRoom={handleLeaveRoom}
       />
 
@@ -354,6 +379,14 @@ export const WatchPartyRoom = () => {
         onSelectVideo={handleSelectVideo}
         onUpdateSubtitles={setSubtitlesUrl}
         onToggleHostControls={handleToggleHostControls}
+      />
+
+      {/* Share Room / QR Code Modal */}
+      <ShareRoomModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        roomCode={upperCode}
+        roomName={roomData?.roomName || roomInfo?.name}
       />
     </div>
   );

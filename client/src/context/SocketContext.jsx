@@ -21,6 +21,7 @@ export const SocketProvider = ({ children }) => {
   });
   const [activeScreenSharer, setActiveScreenSharer] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [reactions, setReactions] = useState([]);
   const [roomError, setRoomError] = useState(null);
 
   const socketRef = useRef(null);
@@ -155,6 +156,14 @@ export const SocketProvider = ({ children }) => {
       setMessages((prev) => [...prev, message]);
     });
 
+    // Reaction received
+    s.on('room:reaction', (reaction) => {
+      setReactions((prev) => [...prev.slice(-25), reaction]);
+      setTimeout(() => {
+        setReactions((prev) => prev.filter((r) => r.id !== reaction.id));
+      }, 3500);
+    });
+
     // Room errors
     s.on('room:error', ({ message }) => {
       setRoomError(message);
@@ -234,6 +243,12 @@ export const SocketProvider = ({ children }) => {
     []
   );
 
+  const sendReaction = useCallback((emoji) => {
+    if (socketRef.current && emoji) {
+      socketRef.current.emit('room:reaction', { emoji });
+    }
+  }, []);
+
   return (
     <SocketContext.Provider
       value={{
@@ -245,6 +260,7 @@ export const SocketProvider = ({ children }) => {
         playbackState,
         activeScreenSharer,
         messages,
+        reactions,
         roomError,
         joinRoom,
         leaveRoom,
@@ -253,6 +269,7 @@ export const SocketProvider = ({ children }) => {
         startScreenShare,
         stopScreenShare,
         sendChatMessage,
+        sendReaction,
         updateMediaStatus
       }}
     >

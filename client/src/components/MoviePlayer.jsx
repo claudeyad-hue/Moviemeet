@@ -24,7 +24,8 @@ export const MoviePlayer = ({
   requestPlaybackSync,
   onOpenSourceModal,
   isFocusMode,
-  subtitlesUrl
+  subtitlesUrl,
+  reactions
 }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -95,10 +96,42 @@ export const MoviePlayer = ({
       }
     }
 
+    // 4. Playback rate sync
+    if (playbackState.playbackRate && video.playbackRate !== playbackState.playbackRate) {
+      video.playbackRate = playbackState.playbackRate;
+    }
+
     setTimeout(() => {
       isSyncingFromRemote.current = false;
     }, 200);
   }, [playbackState]);
+
+  // Global Keyboard Shortcuts (Space, Arrows, M, F)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleTogglePlay();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        handleSkip(-10);
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        handleSkip(10);
+      } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        handleToggleMute();
+      } else if (e.code === 'KeyF') {
+        e.preventDefault();
+        handleToggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isControlDisabled, isPlaying, isMuted, isFullscreen]);
 
   // Periodic drift correction check (every 5 seconds)
   useEffect(() => {
@@ -277,6 +310,25 @@ export const MoviePlayer = ({
           />
         )}
       </video>
+
+      {/* Real-Time Floating Emoji Reactions Canvas */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+        {reactions?.map((r) => (
+          <div
+            key={r.id}
+            className="absolute bottom-16 flex flex-col items-center pointer-events-none select-none"
+            style={{
+              left: `${r.x}%`,
+              animation: 'floatUp 3.2s ease-out forwards'
+            }}
+          >
+            <span className="text-3xl filter drop-shadow-md">{r.emoji}</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-black/60 border border-slate-700/50 text-[10px] text-slate-200 font-medium backdrop-blur-sm mt-0.5">
+              {r.senderName}
+            </span>
+          </div>
+        ))}
+      </div>
 
       {/* Buffering Indicator */}
       {isBuffering && !playbackError && (
@@ -480,6 +532,32 @@ export const MoviePlayer = ({
             >
               <RefreshCw className="w-4 h-4" />
             </button>
+
+            {/* Playback Speed Selector */}
+            <div className="relative group/speed">
+              <button
+                disabled={isControlDisabled}
+                className="px-2 py-1 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[11px] font-semibold text-slate-300 hover:text-white transition-colors"
+                title="Synchronized Playback Speed"
+              >
+                {playbackState?.playbackRate || 1}x
+              </button>
+              <div className="absolute bottom-full right-0 mb-1.5 hidden group-hover/speed:flex flex-col bg-charcoal-900 border border-slate-700 rounded-lg p-1 shadow-cinematic z-30 min-w-[64px]">
+                {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                  <button
+                    key={rate}
+                    onClick={() => sendPlaybackAction('playback-rate', { playbackRate: rate })}
+                    className={`px-2 py-1 text-center text-xs rounded hover:bg-brand-600 hover:text-white transition-colors ${
+                      (playbackState?.playbackRate || 1) === rate
+                        ? 'text-brand-300 font-bold bg-brand-500/20'
+                        : 'text-slate-300'
+                    }`}
+                  >
+                    {rate}x
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Fullscreen */}
             <button
