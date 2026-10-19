@@ -6,7 +6,8 @@ import {
   Check,
   Wifi,
   WifiOff,
-  User
+  User,
+  Video
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,7 +16,9 @@ export const Navbar = ({
   roomName,
   participantCount,
   isConnected,
-  onCopyInvite
+  onCopyInvite,
+  viewMode = 'cinema',
+  onToggleViewMode
 }) => {
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
@@ -42,7 +45,7 @@ export const Navbar = ({
         {roomCode && (
           <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-slate-700/60">
             <span className="text-xs font-semibold text-slate-200 truncate max-w-[160px]">
-              {roomName || 'Watch Party'}
+              {roomName || 'Room'}
             </span>
             <span className="px-2 py-0.5 rounded-md bg-charcoal-800 border border-slate-700 text-[11px] font-mono text-brand-300 font-bold">
               {roomCode}
@@ -51,7 +54,37 @@ export const Navbar = ({
         )}
       </div>
 
-      {/* Center / Right: Room details & Controls */}
+      {/* Center: Cinema vs Video Call View Switcher */}
+      {roomCode && onToggleViewMode && (
+        <div className="flex items-center bg-charcoal-950 p-1 rounded-xl border border-slate-800 shadow-inner">
+          <button
+            onClick={() => onToggleViewMode('cinema')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+              viewMode === 'cinema'
+                ? 'bg-brand-600 text-white shadow-glow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Cinema Mode (Watch Movie with friends)"
+          >
+            <Film className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Cinema</span>
+          </button>
+          <button
+            onClick={() => onToggleViewMode('grid')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+              viewMode === 'grid'
+                ? 'bg-brand-600 text-white shadow-glow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Video Call Mode (Full camera grid meeting)"
+          >
+            <Video className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Video Call</span>
+          </button>
+        </div>
+      )}
+
+      {/* Right: Room details & Controls */}
       <div className="flex items-center gap-2.5">
         {roomCode && (
           <>

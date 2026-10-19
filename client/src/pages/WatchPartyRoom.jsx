@@ -7,6 +7,7 @@ import { Navbar } from '../components/Navbar';
 import { MoviePlayer } from '../components/MoviePlayer';
 import { ScreenShareStage } from '../components/ScreenShareStage';
 import { ParticipantTiles } from '../components/ParticipantTiles';
+import { VideoCallGrid } from '../components/VideoCallGrid';
 import { MeetingToolbar } from '../components/MeetingToolbar';
 import { ChatPanel } from '../components/ChatPanel';
 import { VideoSourceModal } from '../components/VideoSourceModal';
@@ -41,6 +42,7 @@ export const WatchPartyRoom = () => {
   } = useSocket();
 
   // Local state
+  const [viewMode, setViewMode] = useState('cinema'); // 'cinema' | 'grid'
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -284,6 +286,8 @@ export const WatchPartyRoom = () => {
         participantCount={participants.length}
         isConnected={isConnected}
         onCopyInvite={() => setIsShareModalOpen(true)}
+        viewMode={viewMode}
+        onToggleViewMode={setViewMode}
       />
 
       {/* Media Warning Banner if permission denied */}
@@ -304,7 +308,7 @@ export const WatchPartyRoom = () => {
 
       {/* Main Viewing Stage & Panels */}
       <div className="flex-1 flex overflow-hidden p-3 gap-3">
-        {/* Central Stage: Movie Player or Screen Share View */}
+        {/* Central Stage: Movie Player, Video Call Grid, or Screen Share View */}
         <div className="flex-1 flex flex-col min-w-0 h-full gap-3">
           <div className="flex-1 relative w-full h-full min-h-0">
             {activeScreenSharer ? (
@@ -315,6 +319,19 @@ export const WatchPartyRoom = () => {
                 localScreenStream={localScreenStream}
                 remoteScreenStream={remoteScreenStream}
                 onStopScreenShare={stopScreenShare}
+              />
+            ) : viewMode === 'grid' ? (
+              <VideoCallGrid
+                selfParticipant={selfParticipant}
+                participants={participants}
+                localStream={localStream}
+                remoteStreams={remoteStreams}
+                audioEnabled={audioEnabled}
+                videoEnabled={videoEnabled}
+                hiddenVideoTiles={hiddenVideoTiles}
+                onToggleHideParticipantVideo={toggleHideParticipantVideo}
+                onSwitchToCinema={() => setViewMode('cinema')}
+                playbackState={playbackState}
               />
             ) : (
               <MoviePlayer
@@ -330,18 +347,20 @@ export const WatchPartyRoom = () => {
             )}
           </div>
 
-          {/* Bottom Participant Video Strip */}
-          <ParticipantTiles
-            selfParticipant={selfParticipant}
-            participants={participants}
-            localStream={localStream}
-            remoteStreams={remoteStreams}
-            audioEnabled={audioEnabled}
-            videoEnabled={videoEnabled}
-            hiddenVideoTiles={hiddenVideoTiles}
-            onToggleHideParticipantVideo={toggleHideParticipantVideo}
-            isFocusMode={isFocusMode}
-          />
+          {/* Bottom Participant Video Strip (Only shown in Cinema Mode) */}
+          {viewMode === 'cinema' && !activeScreenSharer && (
+            <ParticipantTiles
+              selfParticipant={selfParticipant}
+              participants={participants}
+              localStream={localStream}
+              remoteStreams={remoteStreams}
+              audioEnabled={audioEnabled}
+              videoEnabled={videoEnabled}
+              hiddenVideoTiles={hiddenVideoTiles}
+              onToggleHideParticipantVideo={toggleHideParticipantVideo}
+              isFocusMode={isFocusMode}
+            />
+          )}
         </div>
 
         {/* Collapsible Chat Sidebar */}
@@ -373,6 +392,8 @@ export const WatchPartyRoom = () => {
         onOpenShareModal={() => setIsShareModalOpen(true)}
         onSendReaction={sendReaction}
         onLeaveRoom={handleLeaveRoom}
+        viewMode={viewMode}
+        onToggleViewMode={setViewMode}
       />
 
       {/* Video Source Switcher Modal */}

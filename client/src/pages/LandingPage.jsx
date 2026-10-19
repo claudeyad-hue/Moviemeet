@@ -113,22 +113,30 @@ export const LandingPage = () => {
         <div className="flex-1 max-w-xl text-center lg:text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/15 border border-brand-500/30 text-brand-300 text-xs font-semibold mb-6">
             <Sparkles className="w-3.5 h-3.5 text-brand-neon" />
-            <span>Synchronized Cinema for Remote Friends</span>
+            <span>Cinema Watch Parties & Group Video Calls</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight mb-5">
-            Watch Movies Together.{' '}
+            Watch Movies Together & Video Call.{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-brand-accent to-brand-neon">
               In Perfect Sync.
             </span>
           </h1>
 
           <p className="text-base text-slate-300 leading-relaxed mb-8">
-            Enjoy cinema-grade movie nights from anywhere with real-time video, voice, screen sharing, and synchronized playback. Hide participant video tiles independently for an uninterrupted, distraction-free view.
+            Host live group video calls or cinema-grade movie nights from anywhere with real-time camera grid, voice, screen sharing, and synchronized movie playback. Switch seamlessly between Video Call and Cinema views.
           </p>
 
           {/* Quick Feature Badges */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-left">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+            <div className="p-3 rounded-xl cinematic-glass flex items-start gap-2.5">
+              <Video className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="text-xs font-semibold text-slate-200">Video Calls</h4>
+                <p className="text-[11px] text-slate-400">Full camera grid</p>
+              </div>
+            </div>
+
             <div className="p-3 rounded-xl cinematic-glass flex items-start gap-2.5">
               <Tv className="w-4 h-4 text-brand-400 mt-0.5 flex-shrink-0" />
               <div>
@@ -140,15 +148,15 @@ export const LandingPage = () => {
             <div className="p-3 rounded-xl cinematic-glass flex items-start gap-2.5">
               <Monitor className="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="text-xs font-semibold text-slate-200">Real Screen Share</h4>
-                <p className="text-[11px] text-slate-400">Stream any browser tab</p>
+                <h4 className="text-xs font-semibold text-slate-200">Screen Share</h4>
+                <p className="text-[11px] text-slate-400">Stream any tab/app</p>
               </div>
             </div>
 
             <div className="p-3 rounded-xl cinematic-glass flex items-start gap-2.5">
               <EyeOff className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="text-xs font-semibold text-slate-200">Hide Video Tiles</h4>
+                <h4 className="text-xs font-semibold text-slate-200">Hide Tiles</h4>
                 <p className="text-[11px] text-slate-400">Audio stays playing</p>
               </div>
             </div>

@@ -33,7 +33,9 @@ export const MeetingToolbar = ({
   onOpenSourceModal,
   onOpenShareModal,
   onSendReaction,
-  onLeaveRoom
+  onLeaveRoom,
+  viewMode = 'cinema',
+  onToggleViewMode
 }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const isSomeoneElseSharing = activeScreenSharer && !isScreenSharing;
@@ -134,6 +136,35 @@ export const MeetingToolbar = ({
           >
             <Monitor className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Share Screen</span>
+          </button>
+        )}
+
+        {/* Layout View Switcher (Cinema vs Video Call Grid) */}
+        {onToggleViewMode && (
+          <button
+            onClick={() => onToggleViewMode(viewMode === 'cinema' ? 'grid' : 'cinema')}
+            className={`flex items-center gap-1.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl text-xs font-medium transition-all ${
+              viewMode === 'grid'
+                ? 'bg-brand-600 text-white shadow-glow'
+                : 'bg-charcoal-750 hover:bg-charcoal-700 text-slate-300 hover:text-white'
+            }`}
+            title={
+              viewMode === 'cinema'
+                ? 'Switch to Video Call Grid View (Full Camera Meeting)'
+                : 'Switch to Cinema View (Movie Player Focus)'
+            }
+          >
+            {viewMode === 'cinema' ? (
+              <>
+                <Video className="w-4 h-4 text-emerald-400" />
+                <span className="hidden md:inline">Video Call</span>
+              </>
+            ) : (
+              <>
+                <Film className="w-4 h-4 text-brand-400" />
+                <span className="hidden md:inline">Cinema View</span>
+              </>
+            )}
           </button>
         )}
 
