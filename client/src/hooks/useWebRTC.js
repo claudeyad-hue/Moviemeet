@@ -71,10 +71,23 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
     api.getIceServers(roomCode)
       .then((servers) => {
         if (servers && servers.length) {
-          iceServersRef.current = servers;
+          const hasTurn = servers.some(s => {
+            const urls = Array.isArray(s.urls) ? s.urls : [s.urls];
+            return urls.some(u => u && (u.startsWith('turn:') || u.startsWith('turns:')));
+          });
+          if (hasTurn) {
+            iceServersRef.current = servers;
+          } else {
+            // Keep default TURN servers appended so NAT traversal works on mobile
+            const currentTurns = iceServersRef.current.filter(s => {
+              const urls = Array.isArray(s.urls) ? s.urls : [s.urls];
+              return urls.some(u => u && (u.startsWith('turn:') || u.startsWith('turns:')));
+            });
+            iceServersRef.current = [...servers, ...currentTurns];
+          }
         }
       })
-      .catch((err) => console.warn('Using default STUN servers:', err.message));
+      .catch((err) => console.warn('Using default STUN/TURN servers:', err.message));
   }, [roomCode]);
 
   // Attach local camera/mic tracks to a specific peer connection
@@ -116,8 +129,8 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
       // 1. First attempt: both video and audio
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } },
-          audio: { echoCancellation: true, noiseSuppression: true }
+          video: { facingMode: 'user', width: { ideal: 640, max: 1280 }, height: { ideal: 360, max: 720 }, frameRate: { ideal: 24, max: 30 } },
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         });
         hasAudio = true;
         hasVideo = true;
@@ -136,7 +149,7 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
           // 3. Third attempt: video only (if microphone unavailable)
           try {
             stream = await navigator.mediaDevices.getUserMedia({
-              video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } },
+              video: { facingMode: 'user', width: { ideal: 640, max: 1280 }, height: { ideal: 360, max: 720 }, frameRate: { ideal: 24, max: 30 } },
               audio: false
             });
             hasAudio = false;
@@ -213,6 +226,11 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
         screenStreamRef.current.getTracks().forEach((t) => t.stop());
         screenStreamRef.current = null;
       }
+      // Close all peer connections on unmount to release Android hardware decoders and sockets
+      Object.values(peerConnections.current).forEach((pc) => {
+        try { pc.close(); } catch (e) {}
+      });
+      peerConnections.current = {};
     };
   }, [startLocalMedia]);
 
@@ -300,7 +318,8 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
             if (!existing.getTracks().some((t) => t.id === track.id)) {
               existing.addTrack(track);
             }
-            return { ...prev };
+            // Return new MediaStream reference so React useEffect triggers video assignment!
+            return { ...prev, [peerSocketId]: new MediaStream(existing.getTracks()) };
           }
           return { ...prev, [peerSocketId]: incomingStream };
         });
@@ -315,6 +334,7 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
                 delete next[peerSocketId];
                 return next;
               }
+              return { ...prev, [peerSocketId]: new MediaStream(remaining) };
             }
             return prev;
           });
@@ -322,11 +342,26 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
       }
     };
 
-    pc.onconnectionstatechange = () => {
+    pc.onconnectionstatechange = async () => {
       if (pc.connectionState === 'failed') {
         try {
           pc.restartIce();
-        } catch (e) {}
+          if (pc.signalingState === 'stable') {
+            const offer = await pc.createOffer({ iceRestart: true });
+            await pc.setLocalDescription(offer);
+            if (socket) {
+              socket.emit('webrtc:signal', {
+                toSocketId: peerSocketId,
+                signal: {
+                  type: 'offer',
+                  sdp: pc.localDescription
+                }
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('ICE restart error:', e);
+        }
       }
     };
 
@@ -561,7 +596,7 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
 
       // If we don't have a video track yet, request camera on-demand!
       const newVideoStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24 } }
+        video: { facingMode: 'user', width: { ideal: 640, max: 1280 }, height: { ideal: 360, max: 720 }, frameRate: { ideal: 24, max: 30 } }
       });
       const newVideoTrack = newVideoStream.getVideoTracks()[0];
       if (!newVideoTrack) return false;
@@ -655,7 +690,7 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
       // Check mobile detection
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (isMobile) {
-        throw new Error('Screen sharing cannot be initiated on mobile browsers. You can still view shared screens.');
+        throw new Error('Screen sharing is not available on mobile browsers. You can still view screens shared by desktop users.');
       }
 
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
@@ -718,7 +753,7 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
       return true;
     } catch (err) {
       if (err.name !== 'NotAllowedError') {
-        alert(err.message || 'Screen sharing failed.');
+        setMediaError(err.message || 'Screen sharing failed.');
       }
       return false;
     }

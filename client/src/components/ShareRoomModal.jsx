@@ -20,7 +20,8 @@ export const ShareRoomModal = ({
 
   if (!isOpen) return null;
 
-  const inviteLink = `${window.location.origin}/room/${roomCode}`;
+  const baseUrl = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+  const inviteLink = `${window.location.origin}${baseUrl}/room/${roomCode}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(inviteLink);
@@ -42,8 +43,8 @@ export const ShareRoomModal = ({
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(inviteLink)}&bgcolor=11-15-23&color=165-180-252`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none">
-      <div className="relative w-full max-w-md bg-charcoal-900 border border-slate-700/80 rounded-2xl shadow-cinematic overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md select-none">
+      <div className="relative w-full sm:max-w-md bg-charcoal-900 border border-slate-700/80 rounded-t-2xl sm:rounded-2xl shadow-cinematic overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-4 border-b border-slate-700/60 flex items-center justify-between bg-charcoal-850">
           <div className="flex items-center gap-2">

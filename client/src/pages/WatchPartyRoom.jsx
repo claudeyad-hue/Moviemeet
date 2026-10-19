@@ -189,7 +189,8 @@ export const WatchPartyRoom = () => {
 
   // Copy invitation link
   const handleCopyInvite = () => {
-    const link = `${window.location.origin}/room/${upperCode}`;
+    const baseUrl = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+    const link = `${window.location.origin}${baseUrl}/room/${upperCode}`;
     navigator.clipboard.writeText(link);
   };
 
@@ -278,7 +279,7 @@ export const WatchPartyRoom = () => {
   }
 
   return (
-    <div className="h-screen w-screen bg-charcoal-950 flex flex-col overflow-hidden select-none">
+    <div className="h-[100dvh] w-screen bg-charcoal-950 flex flex-col overflow-hidden select-none">
       {/* Top Navbar */}
       <Navbar
         roomCode={upperCode}
@@ -307,7 +308,7 @@ export const WatchPartyRoom = () => {
       )}
 
       {/* Main Viewing Stage & Panels */}
-      <div className="flex-1 flex flex-row overflow-hidden p-3 gap-3 min-h-0">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-2 sm:p-3 gap-2 sm:gap-3 min-h-0">
         {/* Central Stage: Movie Player, Video Call Grid, or Screen Share View */}
         <div className="flex-1 relative w-full h-full min-h-0 min-w-0">
           {activeScreenSharer ? (
@@ -348,17 +349,19 @@ export const WatchPartyRoom = () => {
 
         {/* Vertical Side Participant Video Strip (Only shown in Cinema Mode) */}
         {viewMode === 'cinema' && !activeScreenSharer && (
-          <ParticipantTiles
-            selfParticipant={selfParticipant}
-            participants={participants}
-            localStream={localStream}
-            remoteStreams={remoteStreams}
-            audioEnabled={audioEnabled}
-            videoEnabled={videoEnabled}
-            hiddenVideoTiles={hiddenVideoTiles}
-            onToggleHideParticipantVideo={toggleHideParticipantVideo}
-            isFocusMode={isFocusMode}
-          />
+          <div className="hidden md:block">
+            <ParticipantTiles
+              selfParticipant={selfParticipant}
+              participants={participants}
+              localStream={localStream}
+              remoteStreams={remoteStreams}
+              audioEnabled={audioEnabled}
+              videoEnabled={videoEnabled}
+              hiddenVideoTiles={hiddenVideoTiles}
+              onToggleHideParticipantVideo={toggleHideParticipantVideo}
+              isFocusMode={isFocusMode}
+            />
+          </div>
         )}
 
         {/* Collapsible Chat Sidebar */}

@@ -92,7 +92,7 @@ export const LandingPage = () => {
   return (
     <div className="min-h-screen bg-charcoal-950 text-slate-100 flex flex-col justify-between selection:bg-brand-500 selection:text-white">
       {/* Top Header */}
-      <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+      <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-accent flex items-center justify-center text-white shadow-glow">
             <Film className="w-5 h-5" />
@@ -108,7 +108,7 @@ export const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <main className="w-full max-w-7xl mx-auto px-6 py-8 flex-1 flex flex-col lg:flex-row items-center justify-between gap-12">
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 flex flex-col lg:flex-row items-center justify-between gap-8 sm:gap-12">
         {/* Left: Branding & Pitch */}
         <div className="flex-1 max-w-xl text-center lg:text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/15 border border-brand-500/30 text-brand-300 text-xs font-semibold mb-6">

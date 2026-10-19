@@ -60,7 +60,7 @@ export const VideoCallGrid = ({
       {/* Main Responsive Video Grid */}
       <div className={`w-full h-full grid ${getGridClass()} gap-3.5 items-center justify-center p-2 pt-12`}>
         {/* Local Participant Card */}
-        <div className="relative w-full h-full min-h-[220px] max-h-[75vh] rounded-2xl overflow-hidden cinematic-glass-dark border-2 border-brand-500/40 bg-charcoal-900 flex items-center justify-center shadow-cinematic">
+        <div className="relative w-full h-full min-h-[140px] sm:min-h-[220px] max-h-[42vh] sm:max-h-[75vh] rounded-2xl overflow-hidden cinematic-glass-dark border-2 border-brand-500/40 bg-charcoal-900 flex items-center justify-center shadow-cinematic">
           <LocalGridTile
             localStream={localStream}
             selfParticipant={selfParticipant}
@@ -77,7 +77,7 @@ export const VideoCallGrid = ({
           return (
             <div
               key={peer.socketId}
-              className="relative w-full h-full min-h-[220px] max-h-[75vh] rounded-2xl overflow-hidden cinematic-glass-dark border border-slate-700/60 bg-charcoal-900 flex items-center justify-center shadow-cinematic group"
+              className="relative w-full h-full min-h-[140px] sm:min-h-[220px] max-h-[42vh] sm:max-h-[75vh] rounded-2xl overflow-hidden cinematic-glass-dark border border-slate-700/60 bg-charcoal-900 flex items-center justify-center shadow-cinematic group"
             >
               <RemoteGridTile
                 participant={peer}
@@ -160,6 +160,7 @@ const RemoteGridTile = ({ participant, stream, isHidden, onToggleHide }) => {
       }
       if (audioRef.current) {
         audioRef.current.srcObject = stream;
+        audioRef.current.play().catch(() => {});
       }
     }
   }, [stream, isHidden]);
@@ -173,6 +174,7 @@ const RemoteGridTile = ({ participant, stream, isHidden, onToggleHide }) => {
         <video
           ref={videoRef}
           autoPlay
+          muted
           playsInline
           className="w-full h-full object-cover"
         />

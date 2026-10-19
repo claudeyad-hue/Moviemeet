@@ -28,7 +28,7 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
     credentials: true
   },
-  pingTimeout: 20000,
+  pingTimeout: 60000,
   pingInterval: 25000
 });
 

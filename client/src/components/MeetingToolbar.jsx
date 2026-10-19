@@ -47,8 +47,8 @@ export const MeetingToolbar = ({
   };
 
   return (
-    <div className="w-full flex items-center justify-center py-2 px-4 z-30 select-none">
-      <div className="relative flex items-center gap-1.5 sm:gap-2.5 px-3 sm:px-4 py-2 rounded-2xl cinematic-glass-dark border border-slate-700/70 shadow-cinematic">
+    <div className="w-full flex items-center justify-center py-1.5 sm:py-2 px-2 sm:px-4 z-30 select-none">
+      <div className="relative flex items-center gap-1 sm:gap-2.5 px-2 sm:px-4 py-1.5 sm:py-2 rounded-2xl cinematic-glass-dark border border-slate-700/70 shadow-cinematic overflow-x-auto max-w-full scrollbar-none">
         {/* Floating Emoji Picker Popover */}
         {showEmojiPicker && (
           <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-2 rounded-2xl cinematic-glass border border-slate-700 shadow-cinematic z-40 animate-fade-in">
@@ -71,7 +71,7 @@ export const MeetingToolbar = ({
         {/* Mic Toggle */}
         <button
           onClick={onToggleAudio}
-          className={`p-2.5 sm:p-3 rounded-xl transition-all duration-200 flex items-center justify-center ${
+          className={`p-2.5 sm:p-3 rounded-xl transition-all duration-200 flex items-center justify-center min-w-[44px] min-h-[44px] ${
             audioEnabled
               ? 'bg-charcoal-750 hover:bg-charcoal-700 text-slate-100 hover:text-white'
               : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
@@ -84,7 +84,7 @@ export const MeetingToolbar = ({
         {/* Camera Toggle */}
         <button
           onClick={onToggleVideo}
-          className={`p-2.5 sm:p-3 rounded-xl transition-all duration-200 flex items-center justify-center ${
+          className={`p-2.5 sm:p-3 rounded-xl transition-all duration-200 flex items-center justify-center min-w-[44px] min-h-[44px] ${
             videoEnabled
               ? 'bg-charcoal-750 hover:bg-charcoal-700 text-slate-100 hover:text-white'
               : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'
@@ -171,7 +171,7 @@ export const MeetingToolbar = ({
         {/* Movie Focus Mode Toggle */}
         <button
           onClick={onToggleFocusMode}
-          className={`flex items-center gap-1.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl text-xs font-medium transition-all ${
+          className={`hidden sm:flex items-center gap-1.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl text-xs font-medium transition-all ${
             isFocusMode
               ? 'bg-brand-500 text-white shadow-glow'
               : 'bg-charcoal-750 hover:bg-charcoal-700 text-slate-300 hover:text-white'
@@ -185,7 +185,7 @@ export const MeetingToolbar = ({
         {/* Video Source Picker */}
         <button
           onClick={onOpenSourceModal}
-          className="p-2.5 sm:p-3 rounded-xl bg-charcoal-750 hover:bg-charcoal-700 text-slate-200 hover:text-white transition-all"
+          className="hidden sm:flex p-2.5 sm:p-3 rounded-xl bg-charcoal-750 hover:bg-charcoal-700 text-slate-200 hover:text-white transition-all"
           title="Change Movie / Video Source"
         >
           <Film className="w-4 h-4 sm:w-5 sm:h-5 text-brand-400" />

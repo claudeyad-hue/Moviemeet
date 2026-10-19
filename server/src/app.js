@@ -9,6 +9,9 @@ const { getDBStatus } = require('./config/db');
 
 const app = express();
 
+// Trust reverse proxy (Render, Cloudflare, etc.) for correct protocol and rate limiting
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(
   helmet({
@@ -44,7 +47,8 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length']
   })
 );
 

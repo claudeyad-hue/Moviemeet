@@ -282,6 +282,7 @@ export const MoviePlayer = ({
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
+      onTouchStart={handleMouseMove}
       className={`relative w-full h-full flex items-center justify-center bg-black overflow-hidden select-none transition-all duration-300 rounded-xl shadow-cinematic ${
         isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''
       }`}
@@ -379,12 +380,12 @@ export const MoviePlayer = ({
 
       {/* Top Overlay Badge Bar */}
       <div
-        className={`absolute top-0 left-0 right-0 p-4 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/30 to-transparent transition-opacity duration-300 z-20 ${
+        className={`absolute top-0 left-0 right-0 p-2 sm:p-4 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/30 to-transparent transition-opacity duration-300 z-20 ${
           showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-charcoal-900/80 border border-slate-700/60 text-xs font-medium text-slate-200">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-charcoal-900/80 border border-slate-700/60 text-xs font-medium text-slate-200">
             <span
               className={`w-2 h-2 rounded-full ${
                 syncStatus === 'In Sync' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-spin'
@@ -394,24 +395,27 @@ export const MoviePlayer = ({
           </div>
 
           {playbackState?.hostControlsOnly ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-xs text-amber-300 font-medium">
+            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-xs text-amber-300 font-medium">
               <Lock className="w-3.5 h-3.5" />
-              <span>Host Only Controls</span>
+              <span className="hidden sm:inline">Host Only Controls</span>
+              <span className="sm:hidden">Host Only</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-500/20 border border-brand-500/30 text-xs text-brand-300 font-medium">
+            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-brand-500/20 border border-brand-500/30 text-xs text-brand-300 font-medium">
               <Unlock className="w-3.5 h-3.5" />
-              <span>Shared Controls</span>
+              <span className="hidden sm:inline">Shared Controls</span>
+              <span className="sm:hidden">Shared</span>
             </div>
           )}
         </div>
 
         <button
           onClick={onOpenSourceModal}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg cinematic-glass hover:bg-white/10 text-xs font-medium text-slate-200 transition-colors shadow-sm"
+          className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg cinematic-glass hover:bg-white/10 text-xs font-medium text-slate-200 transition-colors shadow-sm"
         >
           <Film className="w-3.5 h-3.5 text-brand-400" />
-          <span>Switch Video / Subtitles</span>
+          <span className="hidden sm:inline">Switch Video / Subtitles</span>
+          <span className="sm:hidden">Source</span>
         </button>
       </div>
 
@@ -431,7 +435,7 @@ export const MoviePlayer = ({
 
       {/* Bottom Cinematic Control Bar */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-4 flex flex-col gap-2 transition-opacity duration-300 z-20 ${
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-2 sm:p-4 flex flex-col gap-1.5 sm:gap-2 transition-opacity duration-300 z-20 ${
           showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
@@ -454,7 +458,7 @@ export const MoviePlayer = ({
         {/* Action Controls Bar */}
         <div className="flex items-center justify-between text-slate-200 mt-1">
           {/* Left: Play/Pause, Skips, Time */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <button
               onClick={handleTogglePlay}
               disabled={isControlDisabled}
@@ -489,15 +493,15 @@ export const MoviePlayer = ({
             </button>
 
             {/* Time display */}
-            <div className="text-xs font-mono text-slate-300 ml-2 select-none">
+            <div className="text-[11px] sm:text-xs font-mono text-slate-300 ml-1 sm:ml-2 select-none">
               <span>{formatTime(currentTime)}</span>
-              <span className="text-slate-500 mx-1">/</span>
+              <span className="text-slate-500 mx-0.5 sm:mx-1">/</span>
               <span className="text-slate-400">{formatTime(duration)}</span>
             </div>
           </div>
 
           {/* Right: Volume, CC, Sync button, Fullscreen */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1 sm:gap-2.5">
             {/* Volume */}
             <div className="flex items-center gap-1.5 group/vol">
               <button
@@ -518,7 +522,7 @@ export const MoviePlayer = ({
                 step="0.05"
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
-                className="w-16 h-1 bg-slate-700 accent-brand-500 rounded-lg cursor-pointer"
+                className="hidden sm:block w-16 h-1 bg-slate-700 accent-brand-500 rounded-lg cursor-pointer"
                 title="Volume"
               />
             </div>
@@ -544,7 +548,7 @@ export const MoviePlayer = ({
             </button>
 
             {/* Playback Speed Selector */}
-            <div className="relative group/speed">
+            <div className="relative group/speed hidden sm:block">
               <button
                 disabled={isControlDisabled}
                 className="px-2 py-1 rounded bg-charcoal-800 hover:bg-charcoal-700 text-[11px] font-semibold text-slate-300 hover:text-white transition-colors"

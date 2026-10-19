@@ -92,8 +92,8 @@ export const VideoSourceModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-2xl bg-charcoal-900 border border-slate-700/70 rounded-2xl shadow-cinematic overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md">
+      <div className="relative w-full sm:max-w-2xl bg-charcoal-900 border border-slate-700/70 rounded-t-2xl sm:rounded-2xl shadow-cinematic overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]">
         {/* Header */}
         <div className="p-4 border-b border-slate-700/60 flex items-center justify-between bg-charcoal-850">
           <div className="flex items-center gap-2.5">
@@ -109,7 +109,7 @@ export const VideoSourceModal = ({
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-slate-700/50 bg-charcoal-950/40 px-4 pt-2 gap-2">
+        <div className="flex border-b border-slate-700/50 bg-charcoal-950/40 px-2 sm:px-4 pt-2 gap-1 sm:gap-2 overflow-x-auto">
           <button
             onClick={() => setSelectedTab('samples')}
             className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 flex items-center gap-2 ${

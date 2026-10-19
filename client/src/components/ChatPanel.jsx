@@ -37,7 +37,7 @@ export const ChatPanel = ({
   if (!isOpen) return null;
 
   return (
-    <div className="md:relative fixed right-3 top-16 bottom-24 md:top-auto md:bottom-auto z-40 flex flex-col h-full w-80 max-w-[calc(100vw-24px)] cinematic-glass-dark rounded-xl border border-slate-700/60 shadow-cinematic overflow-hidden">
+    <div className="md:relative fixed inset-x-2 top-14 bottom-20 md:inset-auto md:top-auto md:bottom-auto z-40 flex flex-col md:h-full md:w-80 w-auto cinematic-glass-dark rounded-xl border border-slate-700/60 shadow-cinematic overflow-hidden">
       {/* Chat Header */}
       <div className="flex items-center justify-between p-3.5 border-b border-slate-700/50 bg-charcoal-900/60">
         <div className="flex items-center gap-2">
@@ -103,7 +103,7 @@ export const ChatPanel = ({
       {/* Message Input Box */}
       <form
         onSubmit={handleSubmit}
-        className="p-3 border-t border-slate-700/50 bg-charcoal-900/80 flex items-center gap-2"
+        className="p-3 pb-[env(safe-area-inset-bottom,12px)] border-t border-slate-700/50 bg-charcoal-900/80 flex items-center gap-2"
       >
         <input
           type="text"

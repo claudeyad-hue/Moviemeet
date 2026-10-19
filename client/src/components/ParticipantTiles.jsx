@@ -30,6 +30,7 @@ const RemoteParticipantTile = ({
       // Audio element always receives stream so voice is NEVER muted when video is hidden!
       if (audioRef.current) {
         audioRef.current.srcObject = stream;
+        audioRef.current.play().catch(() => {});
       }
     }
   }, [stream, isHidden]);
@@ -45,11 +46,12 @@ const RemoteParticipantTile = ({
 
       {!isHidden ? (
         <>
-          {/* Active Video Stream */}
+          {/* Active Video Stream (muted so audio plays exclusively through the audio element, preventing echo) */}
           {stream && participant.videoEnabled !== false ? (
             <video
               ref={videoRef}
               autoPlay
+              muted
               playsInline
               className="w-full h-full object-cover"
             />

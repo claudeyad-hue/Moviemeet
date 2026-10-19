@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Film,
   Users,
@@ -30,17 +31,17 @@ export const Navbar = ({
   };
 
   return (
-    <header className="w-full h-14 border-b border-slate-800 bg-charcoal-900/90 backdrop-blur-md px-4 flex items-center justify-between z-30 select-none">
+    <header className="w-full h-12 sm:h-14 border-b border-slate-800 bg-charcoal-900/90 backdrop-blur-md px-2 sm:px-4 flex items-center justify-between z-30 select-none">
       {/* Left: Branding */}
       <div className="flex items-center gap-3">
-        <a href="/" className="flex items-center gap-2 group">
+        <Link to="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-brand-accent flex items-center justify-center text-white shadow-glow-sm group-hover:scale-105 transition-transform">
             <Film className="w-4 h-4" />
           </div>
           <span className="font-extrabold text-base tracking-tight text-white">
             Movie<span className="text-brand-400">Meet</span>
           </span>
-        </a>
+        </Link>
 
         {roomCode && (
           <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-slate-700/60">
@@ -56,7 +57,7 @@ export const Navbar = ({
 
       {/* Center: Cinema vs Video Call View Switcher */}
       {roomCode && onToggleViewMode && (
-        <div className="flex items-center bg-charcoal-950 p-1 rounded-xl border border-slate-800 shadow-inner">
+        <div className="hidden sm:flex items-center bg-charcoal-950 p-1 rounded-xl border border-slate-800 shadow-inner">
           <button
             onClick={() => onToggleViewMode('cinema')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${

@@ -28,6 +28,7 @@ export const SocketProvider = ({ children }) => {
   const [roomError, setRoomError] = useState(null);
 
   const socketRef = useRef(null);
+  const currentRoomCodeRef = useRef(null);
 
   useEffect(() => {
     if (!token) {
@@ -50,6 +51,10 @@ export const SocketProvider = ({ children }) => {
     s.on('connect', () => {
       setIsConnected(true);
       setRoomError(null);
+      // Auto re-join room after network reconnection (e.g. mobile lock/unlock or Wi-Fi to cellular switch)
+      if (currentRoomCodeRef.current) {
+        s.emit('room:join', { roomCode: currentRoomCodeRef.current });
+      }
     });
 
     s.on('disconnect', (reason) => {
@@ -183,6 +188,7 @@ export const SocketProvider = ({ children }) => {
 
   const joinRoom = useCallback(
     (roomCode) => {
+      currentRoomCodeRef.current = roomCode;
       if (socketRef.current) {
         socketRef.current.emit('room:join', { roomCode });
       }
@@ -191,6 +197,7 @@ export const SocketProvider = ({ children }) => {
   );
 
   const leaveRoom = useCallback(() => {
+    currentRoomCodeRef.current = null;
     if (socketRef.current) {
       socketRef.current.emit('room:leave');
     }

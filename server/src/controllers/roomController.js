@@ -52,8 +52,8 @@ const createRoom = async (req, res) => {
     // Initialize runtime room state
     Store.getOrCreateRuntimeRoom(roomCode, defaultVideo, !!hostControlsOnly);
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-    const inviteLink = `${clientUrl}/room/${roomCode}`;
+    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://claudeyad-hue.github.io/Moviemeet' : 'http://localhost:5173');
+    const inviteLink = `${clientUrl.replace(/\/$/, '')}/room/${roomCode}`;
 
     return res.status(201).json({
       success: true,
@@ -129,7 +129,7 @@ const verifyJoinRoom = async (req, res) => {
       }
     }
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const clientUrl = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? 'https://claudeyad-hue.github.io/Moviemeet' : 'http://localhost:5173');
     return res.status(200).json({
       success: true,
       roomCode: room.roomCode,
