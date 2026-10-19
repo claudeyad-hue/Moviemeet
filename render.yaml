@@ -1,0 +1,37 @@
+services:
+  # ─── Backend: Node.js + Express + Socket.IO ───────────────────────────────
+  - type: web
+    name: moviemeet-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false          # Set in Render dashboard
+      - key: CLIENT_URL
+        sync: false          # Set after frontend is deployed
+
+  # ─── Frontend: React + Vite (Static Site) ────────────────────────────────
+  - type: web
+    name: moviemeet-client
+    runtime: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_SERVER_URL
+        sync: false          # Set after backend is deployed

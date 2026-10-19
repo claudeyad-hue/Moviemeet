@@ -12,8 +12,20 @@ const server = http.createServer(app);
 // Socket.IO configuration with CORS and auth
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        origin.startsWith('http://localhost:') ||
+        origin.endsWith('.onrender.com') ||
+        origin === process.env.CLIENT_URL
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Permissive fallback
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
   },
   pingTimeout: 20000,
   pingInterval: 25000
