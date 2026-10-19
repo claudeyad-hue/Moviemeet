@@ -307,49 +307,20 @@ export const WatchPartyRoom = () => {
       )}
 
       {/* Main Viewing Stage & Panels */}
-      <div className="flex-1 flex overflow-hidden p-3 gap-3">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-3 gap-3 min-h-0">
         {/* Central Stage: Movie Player, Video Call Grid, or Screen Share View */}
-        <div className="flex-1 flex flex-col min-w-0 h-full gap-3">
-          <div className="flex-1 relative w-full h-full min-h-0">
-            {activeScreenSharer ? (
-              <ScreenShareStage
-                activeScreenSharer={activeScreenSharer}
-                selfParticipant={selfParticipant}
-                isScreenSharing={isScreenSharing}
-                localScreenStream={localScreenStream}
-                remoteScreenStream={remoteScreenStream}
-                onStopScreenShare={stopScreenShare}
-              />
-            ) : viewMode === 'grid' ? (
-              <VideoCallGrid
-                selfParticipant={selfParticipant}
-                participants={participants}
-                localStream={localStream}
-                remoteStreams={remoteStreams}
-                audioEnabled={audioEnabled}
-                videoEnabled={videoEnabled}
-                hiddenVideoTiles={hiddenVideoTiles}
-                onToggleHideParticipantVideo={toggleHideParticipantVideo}
-                onSwitchToCinema={() => setViewMode('cinema')}
-                playbackState={playbackState}
-              />
-            ) : (
-              <MoviePlayer
-                playbackState={playbackState}
-                selfParticipant={selfParticipant}
-                sendPlaybackAction={sendPlaybackAction}
-                requestPlaybackSync={requestPlaybackSync}
-                onOpenSourceModal={() => setIsSourceModalOpen(true)}
-                isFocusMode={isFocusMode}
-                subtitlesUrl={subtitlesUrl}
-                reactions={reactions}
-              />
-            )}
-          </div>
-
-          {/* Bottom Participant Video Strip (Only shown in Cinema Mode) */}
-          {viewMode === 'cinema' && !activeScreenSharer && (
-            <ParticipantTiles
+        <div className="flex-1 relative w-full h-full min-h-0 min-w-0">
+          {activeScreenSharer ? (
+            <ScreenShareStage
+              activeScreenSharer={activeScreenSharer}
+              selfParticipant={selfParticipant}
+              isScreenSharing={isScreenSharing}
+              localScreenStream={localScreenStream}
+              remoteScreenStream={remoteScreenStream}
+              onStopScreenShare={stopScreenShare}
+            />
+          ) : viewMode === 'grid' ? (
+            <VideoCallGrid
               selfParticipant={selfParticipant}
               participants={participants}
               localStream={localStream}
@@ -358,10 +329,37 @@ export const WatchPartyRoom = () => {
               videoEnabled={videoEnabled}
               hiddenVideoTiles={hiddenVideoTiles}
               onToggleHideParticipantVideo={toggleHideParticipantVideo}
+              onSwitchToCinema={() => setViewMode('cinema')}
+              playbackState={playbackState}
+            />
+          ) : (
+            <MoviePlayer
+              playbackState={playbackState}
+              selfParticipant={selfParticipant}
+              sendPlaybackAction={sendPlaybackAction}
+              requestPlaybackSync={requestPlaybackSync}
+              onOpenSourceModal={() => setIsSourceModalOpen(true)}
               isFocusMode={isFocusMode}
+              subtitlesUrl={subtitlesUrl}
+              reactions={reactions}
             />
           )}
         </div>
+
+        {/* Vertical Side Participant Video Strip (Only shown in Cinema Mode) */}
+        {viewMode === 'cinema' && !activeScreenSharer && (
+          <ParticipantTiles
+            selfParticipant={selfParticipant}
+            participants={participants}
+            localStream={localStream}
+            remoteStreams={remoteStreams}
+            audioEnabled={audioEnabled}
+            videoEnabled={videoEnabled}
+            hiddenVideoTiles={hiddenVideoTiles}
+            onToggleHideParticipantVideo={toggleHideParticipantVideo}
+            isFocusMode={isFocusMode}
+          />
+        )}
 
         {/* Collapsible Chat Sidebar */}
         <ChatPanel
