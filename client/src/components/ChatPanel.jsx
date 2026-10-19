@@ -37,7 +37,7 @@ export const ChatPanel = ({
   if (!isOpen) return null;
 
   return (
-    <div className="flex flex-col h-full w-80 max-w-full cinematic-glass-dark rounded-xl border border-slate-700/60 shadow-cinematic overflow-hidden">
+    <div className="md:relative fixed right-3 top-16 bottom-24 md:top-auto md:bottom-auto z-40 flex flex-col h-full w-80 max-w-[calc(100vw-24px)] cinematic-glass-dark rounded-xl border border-slate-700/60 shadow-cinematic overflow-hidden">
       {/* Chat Header */}
       <div className="flex items-center justify-between p-3.5 border-b border-slate-700/50 bg-charcoal-900/60">
         <div className="flex items-center gap-2">

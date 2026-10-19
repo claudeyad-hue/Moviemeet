@@ -82,6 +82,11 @@ export const MoviePlayer = ({
       if (video.paused) {
         video.play().catch((err) => {
           console.warn('Autoplay prevented by browser:', err.message);
+          if (err.name === 'NotAllowedError') {
+            video.muted = true;
+            setIsMuted(true);
+            video.play().catch(() => {});
+          }
         });
       }
     } else {

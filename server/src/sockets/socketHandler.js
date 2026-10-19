@@ -356,6 +356,9 @@ const setupSocketHandler = (io) => {
             console.log(`[Room] Room ${upperCode} closed after grace period.`);
           }
         }, 60000); // 60s grace period
+        if (runtime.emptyRoomTimer && typeof runtime.emptyRoomTimer.unref === 'function') {
+          runtime.emptyRoomTimer.unref();
+        }
       }
     }
   });

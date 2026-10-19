@@ -207,7 +207,7 @@ cd server
 npm test
 cd ..
 ```
-*Expected result: 13 passed tests across `api.test.js` and `socket.test.js`.*
+*Expected result: 15 passed tests across `api.test.js` and `socket.test.js`.*
 
 ---
 
@@ -259,7 +259,100 @@ All features, room creation, guest authentication, video sync, chat, and WebRTC 
 
 ---
 
-## 6. WebRTC STUN and TURN Configuration
+## 6. Production Deployment Instructions (HTTPS Required)
+
+WebRTC camera/microphone access (`getUserMedia`) and display capture (`getDisplayMedia`) **require a secure context (HTTPS)** in production. Deploying to a public domain without HTTPS will cause browsers to block camera and screen sharing.
+
+### Option A: Monolithic Deployment with Reverse Proxy (Recommended for VPS / DigitalOcean / AWS)
+
+1. **Build the React Frontend:**
+   ```bash
+   cd client
+   npm install
+   npm run build
+   ```
+   This generates the optimized static assets in `client/dist/`.
+
+2. **Server Environment in Production (`server/.env`):**
+   ```env
+   PORT=5000
+   NODE_ENV=production
+   CLIENT_URL=https://moviemeet.yourdomain.com
+   MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/moviemeet?retryWrites=true&w=majority
+   JWT_SECRET=generate_a_cryptographically_secure_random_string_here
+   STUN_SERVERS=stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302
+   TURN_SERVER=turn:your-turn-relay.com:3478
+   TURN_USERNAME=your_turn_user
+   TURN_CREDENTIAL=your_turn_pass
+   ```
+
+3. **Configure Nginx with WebSocket & SSL:**
+   ```nginx
+   server {
+       listen 80;
+       server_name moviemeet.yourdomain.com;
+       return 301 https://$host$request_uri;
+   }
+
+   server {
+       listen 443 ssl http2;
+       server_name moviemeet.yourdomain.com;
+
+       ssl_certificate /etc/letsencrypt/live/moviemeet.yourdomain.com/fullchain.pem;
+       ssl_certificate_key /etc/letsencrypt/live/moviemeet.yourdomain.com/privkey.pem;
+
+       # Serve built React frontend
+       location / {
+           root /var/www/moviemeet/client/dist;
+           try_files $uri $uri/ /index.html;
+       }
+
+       # Reverse Proxy REST API
+       location /api/ {
+           proxy_pass http://localhost:5000;
+           proxy_http_version 1.1;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto https;
+       }
+
+       # Reverse Proxy Socket.IO with WebSocket upgrade
+       location /socket.io/ {
+           proxy_pass http://localhost:5000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+4. **Keep Node Server Running with PM2:**
+   ```bash
+   npm install -g pm2
+   cd server
+   pm2 start src/server.js --name "moviemeet-server"
+   pm2 save
+   pm2 startup
+   ```
+
+### Option B: Cloud Platforms (Railway, Render, Fly.io + Vercel)
+- **Backend (Render / Railway):**
+  - Set Root Directory to `server`.
+  - Build command: `npm install`.
+  - Start command: `node src/server.js`.
+  - Add environment variables: `PORT`, `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL=https://your-frontend.vercel.app`.
+- **Frontend (Vercel / Netlify):**
+  - Set Root Directory to `client`.
+  - Build command: `npm run build`.
+  - Output directory: `dist`.
+  - Add environment variable: `VITE_SERVER_URL=https://your-backend.railway.app`.
+
+---
+
+## 7. WebRTC STUN and TURN Configuration
 
 WebRTC establishes direct peer-to-peer connections between browsers.
 - **STUN (Session Traversal Utilities for NAT):** Enabled by default using Google's public STUN servers (`stun:stun.l.google.com:19302`), which resolves peer addresses for standard home networks.

@@ -36,8 +36,8 @@ const RemoteParticipantTile = ({
 
   return (
     <div
-      className={`relative rounded-xl overflow-hidden cinematic-glass border border-slate-700/50 transition-all duration-300 ${
-        isHidden ? 'h-14 w-full sm:w-44 flex items-center p-2.5 bg-charcoal-900/90' : 'aspect-video w-full sm:w-48 bg-charcoal-900'
+      className={`relative rounded-xl overflow-hidden cinematic-glass border border-slate-700/50 transition-all duration-300 flex-shrink-0 ${
+        isHidden ? 'h-14 w-40 sm:w-44 flex items-center p-2.5 bg-charcoal-900/90' : 'aspect-video w-44 sm:w-48 bg-charcoal-900'
       }`}
     >
       {/* Hidden audio element: ALWAYS plays remote audio regardless of video visibility */}
@@ -226,7 +226,7 @@ export const ParticipantTiles = ({
   );
 
   return (
-    <div className="flex sm:flex-row flex-col gap-2.5 items-center justify-start overflow-x-auto pb-1 max-w-full">
+    <div className="flex flex-row gap-2.5 items-center justify-start overflow-x-auto pb-1 max-w-full flex-shrink-0">
       {/* Self Tile */}
       <LocalParticipantTile
         selfParticipant={selfParticipant}
