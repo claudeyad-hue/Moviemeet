@@ -34,7 +34,8 @@ app.use(
         !origin ||
         allowedOrigins.includes(origin) ||
         origin.startsWith('http://localhost:') ||
-        origin.endsWith('.onrender.com')   // Render production domains
+        origin.endsWith('.onrender.com') ||  // Render production domains
+        origin.endsWith('.github.io')        // GitHub Pages domains
       ) {
         callback(null, true);
       } else {

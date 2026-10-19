@@ -36,8 +36,8 @@ jobs:
       - name: Build Vite application
         working-directory: client
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_SERVER_URL: ${{ secrets.VITE_SERVER_URL }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://moviemeet.onrender.com' }}
+          VITE_SERVER_URL: ${{ secrets.VITE_SERVER_URL || 'https://moviemeet.onrender.com' }}
         run: |
           npm run build
           node -e "const fs = require('fs'); fs.copyFileSync('dist/index.html', 'dist/404.html');"

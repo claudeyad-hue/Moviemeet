@@ -17,6 +17,7 @@ const io = new Server(server, {
         !origin ||
         origin.startsWith('http://localhost:') ||
         origin.endsWith('.onrender.com') ||
+        origin.endsWith('.github.io') ||
         origin === process.env.CLIENT_URL
       ) {
         callback(null, true);

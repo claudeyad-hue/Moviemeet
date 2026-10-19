@@ -3,7 +3,10 @@ import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
-const SERVER_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+const SERVER_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_SERVER_URL ||
+  (import.meta.env.PROD ? 'https://moviemeet.onrender.com' : 'http://localhost:5000');
 
 export const SocketProvider = ({ children }) => {
   const { token, user } = useAuth();
