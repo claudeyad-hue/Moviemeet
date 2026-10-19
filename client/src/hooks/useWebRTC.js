@@ -20,7 +20,28 @@ export const useWebRTC = ({ socket, roomCode, selfParticipant, participants, act
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' }
+    { urls: 'stun:stun4.l.google.com:19302' },
+    // Free TURN servers from Metered Open Relay (no signup needed)
+    {
+      urls: 'turn:a.relay.metered.ca:80',
+      username: 'e8dd65b92c62d5690916054a',
+      credential: '3JGnSB/ariXEz5HT'
+    },
+    {
+      urls: 'turn:a.relay.metered.ca:80?transport=tcp',
+      username: 'e8dd65b92c62d5690916054a',
+      credential: '3JGnSB/ariXEz5HT'
+    },
+    {
+      urls: 'turn:a.relay.metered.ca:443',
+      username: 'e8dd65b92c62d5690916054a',
+      credential: '3JGnSB/ariXEz5HT'
+    },
+    {
+      urls: 'turns:a.relay.metered.ca:443?transport=tcp',
+      username: 'e8dd65b92c62d5690916054a',
+      credential: '3JGnSB/ariXEz5HT'
+    }
   ]);
   const localStreamRef = useRef(null);
   const screenStreamRef = useRef(null);
