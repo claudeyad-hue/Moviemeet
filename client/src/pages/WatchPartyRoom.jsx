@@ -307,7 +307,7 @@ export const WatchPartyRoom = () => {
       )}
 
       {/* Main Viewing Stage & Panels */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-3 gap-3 min-h-0">
+      <div className="flex-1 flex flex-row overflow-hidden p-3 gap-3 min-h-0">
         {/* Central Stage: Movie Player, Video Call Grid, or Screen Share View */}
         <div className="flex-1 relative w-full h-full min-h-0 min-w-0">
           {activeScreenSharer ? (

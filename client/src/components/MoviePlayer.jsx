@@ -347,20 +347,30 @@ export const MoviePlayer = ({
             <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-slate-100 mb-2">Video Playback Issue</h3>
             <p className="text-sm text-slate-300 mb-5 leading-relaxed">{playbackError}</p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
               <button
                 onClick={onOpenSourceModal}
-                className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-glow-sm"
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 shadow-glow-sm"
               >
-                <Film className="w-4 h-4" />
-                Change Movie / Video
+                <Film className="w-3.5 h-3.5" />
+                Change Video Source
               </button>
               <button
-                onClick={requestPlaybackSync}
-                className="px-3 py-2 bg-charcoal-800 hover:bg-charcoal-700 text-slate-200 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                onClick={() => {
+                  setPlaybackError(null);
+                  sendPlaybackAction('change-video', {
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
+                  });
+                }}
+                className="px-3.5 py-2 bg-charcoal-800 hover:bg-charcoal-750 text-brand-300 text-xs font-semibold rounded-xl border border-brand-500/30 transition-colors"
               >
-                <RefreshCw className="w-4 h-4" />
-                Retry Sync
+                ▶ Try Tears of Steel
+              </button>
+              <button
+                onClick={() => setPlaybackError(null)}
+                className="px-3.5 py-2 bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 hover:text-white text-xs font-medium rounded-xl transition-colors"
+              >
+                Dismiss
               </button>
             </div>
           </div>
