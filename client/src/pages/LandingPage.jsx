@@ -92,10 +92,9 @@ export const LandingPage = () => {
         return;
       }
 
-      // Verify room access
-      await api.joinRoom(cleanCode, joinPassword.trim() || undefined);
-
-      navigate(`/room/${cleanCode}`);
+      navigate(`/room/${cleanCode}`, {
+        state: { password: joinPassword.trim() || undefined }
+      });
     } catch (err) {
       setError(err.message || 'Failed to join room');
     } finally {

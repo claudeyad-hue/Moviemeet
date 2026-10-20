@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useWebRTC } from '../hooks/useWebRTC';
@@ -13,11 +13,12 @@ import { ChatPanel } from '../components/ChatPanel';
 import { VideoSourceModal } from '../components/VideoSourceModal';
 import { ShareRoomModal } from '../components/ShareRoomModal';
 import { api } from '../utils/api';
-import { AlertCircle, Lock, Loader2, Sparkles } from 'lucide-react';
+import { AlertCircle, Lock, Loader2, Sparkles, RefreshCw, Home, ArrowLeft } from 'lucide-react';
 
 export const WatchPartyRoom = () => {
   const { code } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const upperCode = (code || '').toUpperCase().trim();
 
   const { user, loginGuest, isAuthenticated } = useAuth();
@@ -32,6 +33,7 @@ export const WatchPartyRoom = () => {
     messages,
     reactions,
     roomError,
+    clearRoomError,
     joinRoom,
     leaveRoom,
     sendPlaybackAction,
@@ -49,13 +51,20 @@ export const WatchPartyRoom = () => {
   const [isSourceModalOpen, setIsSourceModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [subtitlesUrl, setSubtitlesUrl] = useState('');
+
+  // Room verification & join flow states
   const [roomInfo, setRoomInfo] = useState(null);
+  const [loadingInfo, setLoadingInfo] = useState(true);
+  const [infoError, setInfoError] = useState(null);
   const [passwordRequired, setPasswordRequired] = useState(false);
-  const [roomPassword, setRoomPassword] = useState('');
-  const [guestDisplayName, setGuestDisplayName] = useState('');
-  const [joining, setJoining] = useState(true);
+  const [roomPassword, setRoomPassword] = useState(location.state?.password || '');
+  const [guestDisplayName, setGuestDisplayName] = useState(user?.username || '');
+  const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
   const [joinError, setJoinError] = useState(null);
+  const [joinTimedOut, setJoinTimedOut] = useState(false);
+
   const lastMsgCountRef = useRef(0);
+  const hasAutoJoinedRef = useRef(false);
 
   useEffect(() => {
     if (!isChatOpen && messages.length > lastMsgCountRef.current) {
@@ -97,70 +106,118 @@ export const WatchPartyRoom = () => {
     activeScreenSharer
   });
 
-  // Check room status and authentication on mount
-  useEffect(() => {
-    let isCancelled = false;
-
-    const verifyAndJoin = async () => {
-      setJoining(true);
-      setJoinError(null);
-
-      try {
-        // Fetch public room metadata
-        const info = await api.getRoomInfo(upperCode);
-        if (isCancelled) return;
-        setRoomInfo(info);
-
-        if (info.hasPassword) {
-          setPasswordRequired(true);
-        }
-
-        // If not authenticated, prompt or prepare guest
-        if (!isAuthenticated) {
-          setJoining(false);
-          return;
-        }
-
-        // If password is required and not yet provided
-        if (info.hasPassword && !roomPassword) {
-          setJoining(false);
-          return;
-        }
-
-        // Verify join authorization
-        await api.joinRoom(upperCode, roomPassword || undefined);
-
-        // Join socket room
-        joinRoom(upperCode);
-        // Note: joining state stays true until socket roomData arrives or an error is thrown
-      } catch (err) {
-        if (isCancelled) return;
-        setJoinError(err.message || 'Could not connect to room');
-        setJoining(false);
-      }
-    };
-
-    verifyAndJoin();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [upperCode, isAuthenticated]);
-
-  // Handle guest quick-login if visiting directly via invite link
-  const handleGuestJoinSubmit = async (e) => {
-    e.preventDefault();
-    setJoining(true);
-    setJoinError(null);
+  // Step 1: Fetch room metadata on mount or when upperCode changes
+  const fetchRoomInfo = useCallback(async () => {
+    if (!upperCode) return;
+    setLoadingInfo(true);
+    setInfoError(null);
 
     try {
-      const name = guestDisplayName.trim() || `Viewer_${Math.floor(1000 + Math.random() * 9000)}`;
-      await loginGuest(name);
-      setPasswordRequired(false);
-      // loginGuest updates isAuthenticated=true which triggers verifyAndJoin() cleanly
+      const info = await api.getRoomInfo(upperCode);
+      setRoomInfo(info);
+      if (info.hasPassword) {
+        setPasswordRequired(true);
+      }
     } catch (err) {
-      setJoinError(err.message || 'Failed to join watch party');
-      setJoining(false);
+      console.warn('Failed to fetch room info:', err.message);
+      setInfoError(err.message || 'Room not found or server is unreachable');
+    } finally {
+      setLoadingInfo(false);
+    }
+  }, [upperCode]);
+
+  useEffect(() => {
+    fetchRoomInfo();
+  }, [fetchRoomInfo]);
+
+  // Step 2: Attempt joining room with API verification and socket registration
+  const attemptJoin = useCallback(async (targetPassword) => {
+    setIsSubmittingJoin(true);
+    setJoinError(null);
+    setJoinTimedOut(false);
+    if (clearRoomError) clearRoomError();
+
+    try {
+      const pwd = targetPassword !== undefined ? targetPassword : roomPassword;
+      await api.joinRoom(upperCode, pwd || undefined);
+      joinRoom(upperCode);
+    } catch (err) {
+      console.warn('Join error:', err.message);
+      setJoinError(err.message || 'Could not connect to room');
+      setIsSubmittingJoin(false);
+    }
+  }, [upperCode, roomPassword, joinRoom, clearRoomError]);
+
+  // Step 3: Auto-join if user is already authenticated and no password is required (or password is provided)
+  useEffect(() => {
+    if (roomData || hasAutoJoinedRef.current || !roomInfo || loadingInfo) return;
+
+    if (isAuthenticated) {
+      if (!roomInfo.hasPassword || (roomPassword && roomPassword.trim())) {
+        hasAutoJoinedRef.current = true;
+        attemptJoin(roomPassword);
+      }
+    }
+  }, [roomInfo, loadingInfo, isAuthenticated, roomPassword, roomData, attemptJoin]);
+
+  // Step 4: Handle form submission for guest name and/or room password
+  const handleModalSubmit = async (e) => {
+    e.preventDefault();
+    setJoinError(null);
+    if (clearRoomError) clearRoomError();
+    setIsSubmittingJoin(true);
+
+    try {
+      if (!isAuthenticated) {
+        const name = guestDisplayName.trim() || `Viewer_${Math.floor(1000 + Math.random() * 9000)}`;
+        await loginGuest(name);
+      }
+      await attemptJoin(roomPassword);
+    } catch (err) {
+      setJoinError(err.message || 'Failed to enter watch party');
+      setIsSubmittingJoin(false);
+    }
+  };
+
+  // Step 5: Join timeout guard - never leave user stuck on an infinite loading screen
+  useEffect(() => {
+    if (roomData) {
+      setIsSubmittingJoin(false);
+      setJoinTimedOut(false);
+      return;
+    }
+
+    if (isSubmittingJoin) {
+      const timer = setTimeout(() => {
+        if (!roomData) {
+          setJoinTimedOut(true);
+          setIsSubmittingJoin(false);
+          setJoinError('Connection timed out while joining watch party. The real-time server may be waking up or your connection was interrupted.');
+        }
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSubmittingJoin, roomData]);
+
+  // Reset joining state when roomData successfully arrives
+  useEffect(() => {
+    if (roomData) {
+      setIsSubmittingJoin(false);
+      setJoinError(null);
+      setJoinTimedOut(false);
+    }
+  }, [roomData]);
+
+  // Retry action for users
+  const handleRetry = () => {
+    setJoinError(null);
+    setJoinTimedOut(false);
+    if (clearRoomError) clearRoomError();
+
+    if (infoError) {
+      fetchRoomInfo();
+    } else {
+      attemptJoin(roomPassword);
     }
   };
 
@@ -200,33 +257,79 @@ export const WatchPartyRoom = () => {
     }
   };
 
-  // Track when roomData arrives to finish joining state
-  useEffect(() => {
-    if (roomData) {
-      setJoining(false);
-    }
-  }, [roomData]);
+  // UI STATE 1: Initial room info loading
+  if (loadingInfo && !roomData) {
+    return (
+      <div className="min-h-screen bg-charcoal-950 flex flex-col items-center justify-center p-4 text-center select-none">
+        <Loader2 className="w-10 h-10 text-brand-400 animate-spin mb-4" />
+        <p className="text-sm font-semibold text-slate-200 mb-1">
+          Finding Watch Party {upperCode}...
+        </p>
+        <p className="text-xs text-slate-400">
+          Checking room status & server availability...
+        </p>
+      </div>
+    );
+  }
 
-  // Password / Guest Join Prompt Modal
-  if (!isAuthenticated || (passwordRequired && !roomData)) {
+  // UI STATE 2: Room not found or server info error
+  if (infoError && !roomData) {
+    return (
+      <div className="min-h-screen bg-charcoal-950 flex flex-col items-center justify-center p-4 text-center select-none">
+        <div className="w-full max-w-md cinematic-glass-dark p-6 rounded-2xl border border-red-500/40 shadow-cinematic">
+          <div className="w-12 h-12 rounded-full bg-red-500/20 text-red-300 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-6 h-6 text-red-400" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-100 mb-1">
+            Watch Party Not Found
+          </h2>
+          <p className="text-xs text-slate-400 font-mono mb-3">Room: {upperCode}</p>
+          <div className="p-3 mb-5 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-300 leading-relaxed">
+            {infoError}
+          </div>
+          <div className="flex gap-2.5 justify-center">
+            <button
+              onClick={handleRetry}
+              className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-glow transition-all flex items-center gap-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry</span>
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2.5 bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-all flex items-center gap-1.5"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>Back to Home</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // UI STATE 3: Prompt for Display Name and/or Room Password
+  const needsUserInput = !isAuthenticated || (passwordRequired && !roomPassword && !isSubmittingJoin);
+
+  if (needsUserInput && !roomData) {
     return (
       <div className="min-h-screen bg-charcoal-950 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md cinematic-glass-dark p-6 rounded-2xl border border-slate-700/80 shadow-cinematic text-center">
           <div className="w-12 h-12 rounded-full bg-brand-500/20 text-brand-300 flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-6 h-6" />
+            <Lock className="w-6 h-6 text-brand-400" />
           </div>
           <h2 className="text-lg font-bold text-slate-100 mb-1">
             Join {roomInfo?.name || 'Watch Party'}
           </h2>
-          <p className="text-xs text-slate-400 mb-6 font-mono">Room Code: {upperCode}</p>
+          <p className="text-xs text-slate-400 mb-5 font-mono">Room Code: {upperCode}</p>
 
           {(joinError || roomError) && (
-            <div className="p-3 mb-4 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-300">
+            <div className="p-3 mb-4 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-300 text-left">
               {joinError || roomError}
             </div>
           )}
 
-          <form onSubmit={handleGuestJoinSubmit} className="space-y-4 text-left">
+          <form onSubmit={handleModalSubmit} className="space-y-4 text-left">
             {!isAuthenticated && (
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">
@@ -261,19 +364,36 @@ export const WatchPartyRoom = () => {
 
             <button
               type="submit"
-              disabled={joining}
-              className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs rounded-xl shadow-glow transition-all"
+              disabled={isSubmittingJoin}
+              className="w-full py-3 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white font-semibold text-xs rounded-xl shadow-glow transition-all flex items-center justify-center gap-2"
             >
-              {joining ? 'Entering Room...' : 'Join Watch Party'}
+              {isSubmittingJoin ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Entering Room...</span>
+                </>
+              ) : (
+                'Join Watch Party'
+              )}
             </button>
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="text-xs text-slate-400 hover:text-slate-200 transition-colors inline-flex items-center gap-1"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Home</span>
+              </button>
+            </div>
           </form>
         </div>
       </div>
     );
   }
 
-  // Room Join Error State
-  if (!roomData && (joinError || roomError)) {
+  // UI STATE 4: Join Error or Timeout Screen
+  if (!roomData && (joinError || roomError || joinTimedOut)) {
     return (
       <div className="min-h-screen bg-charcoal-950 flex flex-col items-center justify-center p-4 text-center select-none">
         <div className="w-full max-w-md cinematic-glass-dark p-6 rounded-2xl border border-red-500/40 shadow-cinematic">
@@ -285,29 +405,22 @@ export const WatchPartyRoom = () => {
           </h2>
           <p className="text-xs text-slate-400 font-mono mb-3">Room: {upperCode}</p>
           <div className="p-3 mb-5 rounded-xl bg-red-500/15 border border-red-500/30 text-xs text-red-300 leading-relaxed">
-            {joinError || roomError}
+            {joinError || roomError || 'Connection timed out while joining watch party.'}
           </div>
           <div className="flex gap-2.5 justify-center">
             <button
-              onClick={() => {
-                setJoinError(null);
-                setJoining(true);
-                api.joinRoom(upperCode, roomPassword || undefined)
-                  .then(() => joinRoom(upperCode))
-                  .catch((err) => {
-                    setJoinError(err.message || 'Retry failed');
-                    setJoining(false);
-                  });
-              }}
-              className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-glow transition-all"
+              onClick={handleRetry}
+              className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-glow transition-all flex items-center gap-1.5"
             >
-              Retry Connection
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry Connection</span>
             </button>
             <button
               onClick={() => navigate('/')}
-              className="px-4 py-2.5 bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-all"
+              className="px-4 py-2.5 bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-all flex items-center gap-1.5"
             >
-              Back to Home
+              <Home className="w-3.5 h-3.5" />
+              <span>Back to Home</span>
             </button>
           </div>
         </div>
@@ -315,7 +428,7 @@ export const WatchPartyRoom = () => {
     );
   }
 
-  // Loading Room State while connecting to socket and receiving authoritative room metadata
+  // UI STATE 5: Active connecting / loading screen (while socket receives room:joined metadata)
   if (!roomData) {
     return (
       <div className="min-h-screen bg-charcoal-950 flex flex-col items-center justify-center p-4 text-center select-none">
@@ -323,9 +436,15 @@ export const WatchPartyRoom = () => {
         <p className="text-sm font-semibold text-slate-200 mb-1">
           Entering Watch Party {upperCode}...
         </p>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-400 mb-5">
           Connecting to real-time sync server & participants...
         </p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-3.5 py-1.5 rounded-lg bg-charcoal-850 hover:bg-charcoal-800 text-slate-400 hover:text-slate-200 text-xs border border-slate-800 transition-colors"
+        >
+          Cancel & Return Home
+        </button>
       </div>
     );
   }

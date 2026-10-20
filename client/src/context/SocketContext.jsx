@@ -43,7 +43,8 @@ export const SocketProvider = ({ children }) => {
 
     const s = io(SERVER_URL, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
+      timeout: 20000,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000
     });
@@ -64,7 +65,7 @@ export const SocketProvider = ({ children }) => {
 
     s.on('connect_error', (err) => {
       console.warn('Socket connection error:', err.message);
-      setRoomError(err.message);
+      setRoomError(err.message || 'Real-time connection error');
     });
 
     // Room joined acknowledgment
@@ -186,12 +187,21 @@ export const SocketProvider = ({ children }) => {
     };
   }, [token]);
 
+  const clearRoomError = useCallback(() => {
+    setRoomError(null);
+  }, []);
+
   const joinRoom = useCallback(
     (roomCode) => {
       const cleanCode = (roomCode || '').toUpperCase().trim();
       currentRoomCodeRef.current = cleanCode;
-      if (socketRef.current && socketRef.current.connected) {
-        socketRef.current.emit('room:join', { roomCode: cleanCode });
+      setRoomError(null);
+      if (socketRef.current) {
+        if (socketRef.current.connected) {
+          socketRef.current.emit('room:join', { roomCode: cleanCode });
+        } else {
+          socketRef.current.connect();
+        }
       }
     },
     []
@@ -273,6 +283,7 @@ export const SocketProvider = ({ children }) => {
         messages,
         reactions,
         roomError,
+        clearRoomError,
         joinRoom,
         leaveRoom,
         sendPlaybackAction,
