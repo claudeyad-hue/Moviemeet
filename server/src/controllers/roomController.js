@@ -120,10 +120,11 @@ const verifyJoinRoom = async (req, res) => {
     }
 
     if (room.hasPassword) {
-      if (!password) {
+      const normalizedPassword = typeof password === 'string' ? password.trim() : '';
+      if (!normalizedPassword) {
         return res.status(401).json({ error: 'Password required to join this room', requiresPassword: true });
       }
-      const match = await bcrypt.compare(password, room.passwordHash);
+      const match = await bcrypt.compare(normalizedPassword, room.passwordHash);
       if (!match) {
         return res.status(401).json({ error: 'Incorrect room password', requiresPassword: true });
       }

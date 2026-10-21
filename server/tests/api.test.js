@@ -56,6 +56,58 @@ describe('MovieMeet REST API Tests', () => {
     testRoomCode = res.body.room.roomCode;
   });
 
+  test('POST /api/rooms/:code/join should normalize room passwords before comparison', async () => {
+    const created = await request(app)
+      .post('/api/rooms')
+      .set('Authorization', `Bearer ${guestToken}`)
+      .send({ name: 'Password Test Room', password: ' screening ' });
+
+    expect(created.status).toBe(201);
+    expect(created.body.room.hasPassword).toBe(true);
+    expect(created.body.room).not.toHaveProperty('passwordHash');
+    const roomCode = created.body.room.roomCode;
+
+    const noPassword = await request(app)
+      .post(`/api/rooms/${roomCode}/join`)
+      .set('Authorization', `Bearer ${guestToken}`)
+      .send({});
+    expect(noPassword.status).toBe(401);
+    expect(noPassword.body.error).toBe('Password required to join this room');
+
+    const paddedPassword = await request(app)
+      .post(`/api/rooms/${roomCode}/join`)
+      .set('Authorization', `Bearer ${guestToken}`)
+      .send({ password: ' screening ' });
+
+    expect(paddedPassword.status).toBe(200);
+
+    const secondGuest = await request(app)
+      .post('/api/auth/guest')
+      .send({ username: 'Cinephile_Bob' });
+    expect(secondGuest.status).toBe(200);
+
+    const secondUserJoin = await request(app)
+      .post(`/api/rooms/${roomCode}/join`)
+      .set('Authorization', `Bearer ${secondGuest.body.token}`)
+      .send({ password: 'screening' });
+    expect(secondUserJoin.status).toBe(200);
+
+    const incorrectPassword = await request(app)
+      .post(`/api/rooms/${roomCode}/join`)
+      .set('Authorization', `Bearer ${guestToken}`)
+      .send({ password: 'incorrect' });
+
+    expect(incorrectPassword.status).toBe(401);
+    expect(incorrectPassword.body.error).toBe('Incorrect room password');
+
+    const missingRoom = await request(app)
+      .post('/api/rooms/ZZZ-0000/join')
+      .set('Authorization', `Bearer ${guestToken}`)
+      .send({ password: 'screening' });
+    expect(missingRoom.status).toBe(404);
+    expect(missingRoom.body.error).toBe('Room not found');
+  });
+
   test('GET /api/rooms/:code should return public room info', async () => {
     const res = await request(app).get(`/api/rooms/${testRoomCode}`);
     expect(res.status).toBe(200);
