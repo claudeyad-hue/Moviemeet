@@ -56,7 +56,7 @@ describe('MovieMeet REST API Tests', () => {
     testRoomCode = res.body.room.roomCode;
   });
 
-  test('POST /api/rooms/:code/join should normalize room passwords before comparison', async () => {
+  test('POST /api/rooms/:code/join should allow the host and validate guest passwords', async () => {
     const created = await request(app)
       .post('/api/rooms')
       .set('Authorization', `Bearer ${guestToken}`)
@@ -67,12 +67,23 @@ describe('MovieMeet REST API Tests', () => {
     expect(created.body.room).not.toHaveProperty('passwordHash');
     const roomCode = created.body.room.roomCode;
 
+    const secondGuest = await request(app)
+      .post('/api/auth/guest')
+      .send({ username: 'Cinephile_Bob' });
+    expect(secondGuest.status).toBe(200);
+
     const noPassword = await request(app)
       .post(`/api/rooms/${roomCode}/join`)
       .set('Authorization', `Bearer ${guestToken}`)
       .send({});
-    expect(noPassword.status).toBe(401);
-    expect(noPassword.body.error).toBe('Password required to join this room');
+    expect(noPassword.status).toBe(200);
+
+    const guestWithoutPassword = await request(app)
+      .post(`/api/rooms/${roomCode}/join`)
+      .set('Authorization', `Bearer ${secondGuest.body.token}`)
+      .send({});
+    expect(guestWithoutPassword.status).toBe(401);
+    expect(guestWithoutPassword.body.error).toBe('Password required to join this room');
 
     const paddedPassword = await request(app)
       .post(`/api/rooms/${roomCode}/join`)
@@ -80,11 +91,6 @@ describe('MovieMeet REST API Tests', () => {
       .send({ password: ' screening ' });
 
     expect(paddedPassword.status).toBe(200);
-
-    const secondGuest = await request(app)
-      .post('/api/auth/guest')
-      .send({ username: 'Cinephile_Bob' });
-    expect(secondGuest.status).toBe(200);
 
     const secondUserJoin = await request(app)
       .post(`/api/rooms/${roomCode}/join`)
@@ -94,7 +100,7 @@ describe('MovieMeet REST API Tests', () => {
 
     const incorrectPassword = await request(app)
       .post(`/api/rooms/${roomCode}/join`)
-      .set('Authorization', `Bearer ${guestToken}`)
+      .set('Authorization', `Bearer ${secondGuest.body.token}`)
       .send({ password: 'incorrect' });
 
     expect(incorrectPassword.status).toBe(401);

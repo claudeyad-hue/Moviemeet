@@ -119,7 +119,8 @@ const verifyJoinRoom = async (req, res) => {
       return res.status(403).json({ error: 'Room is full (maximum 4 participants)' });
     }
 
-    if (room.hasPassword) {
+    const isRoomHost = room.hostUserId === req.user.userId;
+    if (room.hasPassword && !isRoomHost) {
       const normalizedPassword = typeof password === 'string' ? password.trim() : '';
       if (!normalizedPassword) {
         return res.status(401).json({ error: 'Password required to join this room', requiresPassword: true });
